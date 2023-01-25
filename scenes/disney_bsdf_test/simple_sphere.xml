@@ -9,20 +9,20 @@
 		<point name="center" x="0" y="0" z="0"/>
 		<float name="radius" value="1.0"/>
 
-		<bsdf type="diffuse" id="diffmat">
+		<!-- <bsdf type="diffuse" id="diffmat">
 			<rgb name="reflectance" value="0.5 0.5 0.5"/>
-		</bsdf>
+		</bsdf> -->
 
 <!-- 		<bsdf type="roughplastic">
 			<rgb name="diffuseReflectance" value="0.0 0.0 0.0"/>
 			<float name="roughness" value="0.5"/>
 		</bsdf> -->
 
-<!-- 		<bsdf type="disneydiffuse">
+		<bsdf type="disneydiffuse">
 			<rgb name="baseColor" value="0.5 0.5 0.5"/>
 			<float name="roughness" value="1.0"/>
 			<float name="subsurface" value="0.0"/>
-		</bsdf> -->
+		</bsdf>
 
 <!-- 		<bsdf type="disneymetal">
 			<rgb name="baseColor" value="0.5 0.5 0.5"/>

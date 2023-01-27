@@ -66,6 +66,26 @@ inline Real GGX(Real n_dot_h, Real roughness) {
     return GTR2(n_dot_h, roughness);
 }
 
+inline Real anisotropic_GGX(Real roughness, Real anisotropic, const Vector3 &half_in_local) {
+    Real alpha_min = 0.0001;
+    Real aspect = sqrt(1. - 0.9 * anisotropic);
+    Real alpha_x = fmax(alpha_min, roughness * roughness / aspect);
+    Real alpha_y = fmax(alpha_min, roughness * roughness * aspect);
+
+    Real ndf_ = half_in_local.x * half_in_local.x / (alpha_x * alpha_x) + 
+                half_in_local.y * half_in_local.y / (alpha_y * alpha_y) +
+                half_in_local.z * half_in_local.z;
+    return 1. / (c_PI * alpha_x * alpha_y * ndf_ * ndf_);
+}
+
+inline Real clearcoat_GGX(Real clearcoat_gloss, const Vector3 &half_in_local) {
+    Real alpha_g = (1. - clearcoat_gloss) * 0.1 + clearcoat_gloss * 0.001;
+
+    return (alpha_g * alpha_g - 1) / 
+           (c_PI * log(alpha_g * alpha_g) * 
+           (1 + (alpha_g * alpha_g - 1) * half_in_local.z * half_in_local.z));
+}
+
 /// The masking term models the occlusion between the small mirrors of the microfacet models.
 /// See Eric Heitz's paper "Understanding the Masking-Shadowing Function in Microfacet-Based BRDFs"
 /// for a great explanation.
@@ -78,6 +98,23 @@ inline Real smith_masking_gtr2(const Vector3 &v_local, Real roughness) {
     Vector3 v2 = v_local * v_local;
     Real Lambda = (-1 + sqrt(1 + (v2.x * a2 + v2.y * a2) / v2.z)) / 2;
     return 1 / (1 + Lambda);
+}
+
+inline Real smith_masking_gtr3(Real roughness, Real anisotropic, const Vector3 &w_local) {
+    Real alpha_min = 0.0001;
+    Real aspect = sqrt(1. - 0.9 * anisotropic);
+    Real alpha_x = fmax(alpha_min, roughness * roughness / aspect);
+    Real alpha_y = fmax(alpha_min, roughness * roughness * aspect);
+
+    Real lambda = (sqrt(1. + (w_local.x * w_local.x * alpha_x * alpha_x + 
+                         w_local.y * w_local.y * alpha_y * alpha_y) / (w_local.z * w_local.z)) - 1.) / 2.;
+    return 1. / (1. + lambda);
+}
+
+inline Real smith_masking_gtr4(Real clearcoat_gloss, const Vector3 &w_local) {
+    Real lambda = (sqrt(1. + (w_local.x * w_local.x * 0.25 *  0.25 + 
+                         w_local.y * w_local.y *  0.25 *  0.25) / (w_local.z * w_local.z)) - 1.) / 2.;
+    return 1. / (1. + lambda);
 }
 
 /// See "Sampling the GGX Distribution of Visible Normals", Heitz, 2018.

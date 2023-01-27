@@ -52,7 +52,7 @@ inline Vector3 to_local(const Frame &frame, const Vector3 &v) {
 }
 
 /// Convert a vector in a frame's local coordinates to the reference coordinate the frame is in.
-/// v is the local coordinates, frame is the target coordinate frame
+/// v is the local coordinates which is in the frame
 inline Vector3 to_world(const Frame &frame, const Vector3 &v) {
     return frame[0] * v[0] + frame[1] * v[1] + frame[2] * v[2];
 }

@@ -11,7 +11,7 @@ Spectrum eval_op::operator()(const DisneyBSDF &bsdf) const {
     // Homework 1: implement this!
     bool inside = dot(vertex.geometric_normal, dir_in) <= 0;
     if(inside) {
-        return eval(DisneyGlass{bsdf.base_color, bsdf.roughness, bsdf.anisotropic},
+        return eval(DisneyGlass{bsdf.base_color, bsdf.roughness, bsdf.anisotropic, bsdf.eta},
                           dir_in, dir_out, vertex, texture_pool, dir); 
     }
 
@@ -74,10 +74,15 @@ Real pdf_sample_bsdf_op::operator()(const DisneyBSDF &bsdf) const {
     Real metallic = eval(bsdf.metallic, vertex.uv, vertex.uv_screen_size, texture_pool);
     Real clearcoat = eval(bsdf.clearcoat, vertex.uv, vertex.uv_screen_size, texture_pool);
 
-    return (1 - specular_transmission) * (1 - metallic) * pdf_diffuse + 
-        (1 - specular_transmission * (1 - metallic)) * pdf_metal + 
-        0.25 * clearcoat * pdf_clear_coat + 
-        (1 - metallic) * specular_transmission * pdf_glass; 
+    Real normalize = (1 - specular_transmission) * (1 - metallic) +  
+                     (1 - specular_transmission * (1 - metallic)) + 
+                     0.25 * clearcoat + 
+                     (1 - metallic) * specular_transmission;
+
+    return (1 - specular_transmission) * (1 - metallic) / normalize * pdf_diffuse + 
+        (1 - specular_transmission * (1 - metallic)) / normalize * pdf_metal + 
+        0.25 * clearcoat / normalize * pdf_clear_coat + 
+        (1 - metallic) / normalize * specular_transmission * pdf_glass; 
 }
 
 std::optional<BSDFSampleRecord>
@@ -90,31 +95,44 @@ std::optional<BSDFSampleRecord>
     // Homework 1: implement this!
     Real specular_transmission = eval(bsdf.specular_transmission, vertex.uv, vertex.uv_screen_size, texture_pool);
     Real metallic = eval(bsdf.metallic, vertex.uv, vertex.uv_screen_size, texture_pool);
+    Real clearcoat = eval(bsdf.clearcoat, vertex.uv, vertex.uv_screen_size, texture_pool);
+
 
     bool inside = dot(vertex.geometric_normal, dir_in) <= 0;
     if(inside) {
         return sample_bsdf(DisneyGlass{bsdf.base_color, bsdf.roughness, bsdf.anisotropic, bsdf.eta},
                           dir_in, vertex, texture_pool, rnd_param_uv, rnd_param_w);
     }
+    Real normalize = (1 - specular_transmission) * (1 - metallic) + 
+                     (1 - specular_transmission * (1 - metallic)) + 
+                     (1 - metallic) * specular_transmission + 
+                     0.25 * clearcoat;
+
+    Real p_diffuse = (1 - specular_transmission) * (1 - metallic) / normalize;
+    Real p_metal = (1 - specular_transmission * (1 - metallic)) / normalize;
+    Real p_glass = (1 - metallic) * specular_transmission / normalize;
+    Real p_clearcoat = 0.25 * clearcoat / normalize;
     //reuse random number
-    if (rnd_param_w <= metallic) {
+    if (rnd_param_w <= p_diffuse) {
         // in metallic: clearcoat & metal
-        Real new_rnd = rnd_param_w / metallic;
-        (void)new_rnd;
-    } else {
-        // in non metallic: diffuse + glass
-        Real new_rnd = rnd_param_w / metallic;
-        if (new_rnd <= specular_transmission) {
-            // sample in glass lobe
-            return sample_bsdf(DisneyGlass{bsdf.base_color, bsdf.roughness, bsdf.anisotropic, bsdf.eta},
+        return sample_bsdf(DisneyDiffuse{bsdf.base_color, bsdf.roughness, bsdf.subsurface},
+                          dir_in, vertex, texture_pool, rnd_param_uv, rnd_param_w);
+    } {
+        Real new_rnd = (rnd_param_w  - p_diffuse) / (1 - p_diffuse);
+        if (new_rnd <= p_metal) {
+            return sample_bsdf(DisneyMetal{bsdf.base_color, bsdf.roughness, bsdf.anisotropic},
                           dir_in, vertex, texture_pool, rnd_param_uv, rnd_param_w);
         } else {
-            // sample in diffuse lobe
-            return sample_bsdf(DisneyDiffuse{bsdf.base_color, bsdf.roughness, bsdf.subsurface},
+            Real new_rnd = (rnd_param_w  - p_diffuse -  p_metal) / (1 - p_diffuse - p_metal);
+            if (new_rnd <= p_glass) {
+            return sample_bsdf(DisneyGlass{bsdf.base_color, bsdf.roughness, bsdf.anisotropic, bsdf.eta},
                           dir_in, vertex, texture_pool, rnd_param_uv, rnd_param_w);
+            } else {
+                return sample_bsdf(DisneyClearcoat{bsdf.clearcoat_gloss},
+                          dir_in, vertex, texture_pool, rnd_param_uv, rnd_param_w);
+            }
         }
     }
-    return {};
 }
 
 TextureSpectrum get_texture_op::operator()(const DisneyBSDF &bsdf) const {

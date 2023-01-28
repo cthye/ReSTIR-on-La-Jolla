@@ -25,12 +25,18 @@ Spectrum eval_op::operator()(const DisneyGlass &bsdf) const {
         half_vector = -half_vector;
     }
 
-    roughness = std::clamp(roughness, Real(0.01), Real(1));
+    // roughness = std::clamp(roughness, Real(0.01), Real(1));
     
     Real h_dot_in = dot(half_vector, dir_in);
     Real h_dot_out = dot(half_vector, dir_out);
 
     // Fresnel reflection
+    //?????
+    // if(dot(half_vector, dir_in) < 0) {
+    //     half_vector = -half_vector;
+    // }
+    // h_dot_in = fmax(dot(half_vector, dir_in), Real(0));
+
     Real F = fresnel_dielectric(h_dot_in, eta);
 
     //normal distribution funciton term
@@ -77,15 +83,21 @@ Real pdf_sample_bsdf_op::operator()(const DisneyGlass &bsdf) const {
     Real roughness = eval(
         bsdf.roughness, vertex.uv, vertex.uv_screen_size, texture_pool);
     Real anisotropic = eval(
-        bsdf.roughness, vertex.uv, vertex.uv_screen_size, texture_pool);
+        bsdf.anisotropic, vertex.uv, vertex.uv_screen_size, texture_pool);
     // Clamp roughness to avoid numerical issues.
-    roughness = std::clamp(roughness, Real(0.01), Real(1));
-    roughness = std::clamp(roughness, Real(0.01), Real(1));
+    // roughness = std::clamp(roughness, Real(0.01), Real(1));
 
     // We sample the visible normals, also we use F to determine
     // whether to sample reflection or refraction
     // so PDF ~ F * D * G_in for reflection, PDF ~ (1 - F) * D * G_in for refraction.
+    //???
+    // if(dot(half_vector, dir_in) < 0) {
+    //     half_vector = -half_vector;
+    // }
+
+    // Real h_dot_in = fmax(dot(half_vector, dir_in), Real(0));
     Real h_dot_in = dot(half_vector, dir_in);
+
     Real F = fresnel_dielectric(h_dot_in, eta);
 
     Real D = anisotropic_GGX(roughness, anisotropic, to_local(frame, half_vector));
@@ -93,6 +105,7 @@ Real pdf_sample_bsdf_op::operator()(const DisneyGlass &bsdf) const {
     if (reflect) {
         return (F * D * G_in) / (4 * fabs(dot(frame.n, dir_in)));
     } else {
+        //? anything need to change here?
         Real h_dot_out = dot(half_vector, dir_out);
         Real sqrt_denom = h_dot_in + eta * h_dot_out;
         Real dh_dout = eta * eta * h_dot_out / (sqrt_denom * sqrt_denom);
@@ -113,7 +126,7 @@ std::optional<BSDFSampleRecord>
     Real roughness = eval(
         bsdf.roughness, vertex.uv, vertex.uv_screen_size, texture_pool);
     // Clamp roughness to avoid numerical issues.
-    roughness = std::clamp(roughness, Real(0.01), Real(1));
+    // roughness = std::clamp(roughness, Real(0.01), Real(1));
     // Sample a micro normal and transform it to world space -- this is our half-vector.
     Real alpha = roughness * roughness;
     Vector3 local_dir_in = to_local(frame, dir_in);
@@ -128,13 +141,7 @@ std::optional<BSDFSampleRecord>
 
     // Now we need to decide whether to reflect or refract.
     // We do this using the Fresnel term.
-    //! don't know whether it will affect using another fresnel term 
-    //! which using normal rather than half
     Real h_dot_in = dot(half_vector, dir_in);
-    // Vector3 dir_out = 2. * half_vector - dir_in;
-    // Real h_dot_out = dot(half_vector, dir_out);
-    Real h_dot_out_sq = 1 - (1 - h_dot_in * h_dot_in) / (eta * eta);
-    Real h_dot_out= sqrt(h_dot_out_sq);
     Real F = fresnel_dielectric(h_dot_in, eta);
 
     if (rnd_param_w <= F) {
@@ -146,7 +153,7 @@ std::optional<BSDFSampleRecord>
         // Refraction
         // https://en.wikipedia.org/wiki/Snell%27s_law#Vector_form
         // (note that our eta is eta2 / eta1, and l = -dir_in)
-        // Real h_dot_out_sq = 1 - (1 - h_dot_in * h_dot_in) / (eta * eta);
+        Real h_dot_out_sq = 1 - (1 - h_dot_in * h_dot_in) / (eta * eta);
         if (h_dot_out_sq <= 0) {
             // Total internal reflection
             // This shouldn't really happen, as F will be 1 in this case.
@@ -156,7 +163,8 @@ std::optional<BSDFSampleRecord>
         if (h_dot_in < 0) {
             half_vector = -half_vector;
         }
-        // Real h_dot_out= sqrt(h_dot_out_sq);
+        //? anychanges
+        Real h_dot_out= sqrt(h_dot_out_sq);
         Vector3 refracted = -dir_in / eta + (fabs(h_dot_in) / eta - h_dot_out) * half_vector;
         return BSDFSampleRecord{refracted, eta, roughness};
     }

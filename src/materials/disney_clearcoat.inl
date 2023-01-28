@@ -16,7 +16,7 @@ Spectrum eval_op::operator()(const DisneyClearcoat &bsdf) const {
     Real n_dot_in = fmax(dot(frame.n, dir_in), Real(0));
     Real n_dot_out = fmax(dot(frame.n, dir_out), Real(0));
     Real n_dot_half = fmax(dot(frame.n, half), Real(0));
-    //? do diffuse also need this?
+    //? do diffuse also need this? I think so..
     if (n_dot_out <= 0 || n_dot_half <= 0) {
         return make_zero_spectrum();
     } 

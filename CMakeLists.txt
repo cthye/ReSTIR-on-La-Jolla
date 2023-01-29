@@ -15,7 +15,9 @@ else()
   add_compile_options(-Wall)
 endif()
 
-find_package(Embree PATHS "/opt/homebrew/lib/" REQUIRED)
+# find_package(Embree PATHS "/opt/homebrew/lib/" REQUIRED)
+find_package(Embree REQUIRED)
+
 IF(Embree_FOUND)
   message(STATUS "find embree ${Embree_FOUND}:${EMBREE_LIBRARY}})")
 ELSE()

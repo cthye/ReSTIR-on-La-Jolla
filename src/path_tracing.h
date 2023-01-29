@@ -223,6 +223,7 @@ Spectrum path_tracing(const Scene &scene,
         }
         const BSDFSampleRecord &bsdf_sample = *bsdf_sample_;
         Vector3 dir_bsdf = bsdf_sample.dir_out;
+        assert(dir_bsdf.x == dir_bsdf.x);
         // Update ray differentials & eta_scale
         if (bsdf_sample.eta == 0) {
             ray_diff.spread = reflect(ray_diff, vertex.mean_curvature, bsdf_sample.roughness);

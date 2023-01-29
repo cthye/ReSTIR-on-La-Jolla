@@ -50,6 +50,7 @@ Real pdf_sample_bsdf_op::operator()(const DisneyDiffuse &bsdf) const {
     
     // Homework 1: implement this!
     // importance sample the cosine hemisphere domain
+
     return fmax(dot(frame.n, dir_out), Real(0)) / c_PI;
 }
 

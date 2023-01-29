@@ -78,7 +78,7 @@ std::optional<BSDFSampleRecord>
     // Homework 1: implement this!
     Real clearcoat_gloss = eval(bsdf.clearcoat_gloss, vertex.uv, vertex.uv_screen_size, texture_pool);
     Real alpha_g = (1. - clearcoat_gloss) * 0.1 + clearcoat_gloss * 0.001;
-    Real h_elevation = acos(sqrt(1 - pow(alpha_g * alpha_g, 1 - rnd_param_uv.x))/(1 - alpha_g * alpha_g));
+    Real h_elevation = acos(sqrt((1 - pow(alpha_g * alpha_g, 1 - rnd_param_uv.x))/(1 - alpha_g * alpha_g)));
     Real h_azimuth = 2 * c_PI * rnd_param_uv.y;
     Real h_local_x = sin(h_elevation) * cos(h_azimuth);
     Real h_local_y = sin(h_elevation) * sin(h_azimuth);

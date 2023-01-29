@@ -62,6 +62,21 @@ inline Real fresnel_dielectric(Real n_dot_i, Real eta) {
     return fresnel_dielectric(fabs(n_dot_i), n_dot_t, eta);
 }
 
+inline Real schlick_fresnel_2(Real n_dot_i, Real eta) {
+    Real F0 = pow((1. - eta) / (1. + eta), 2);
+    if(eta < 1) {
+        //use theta_t
+        Real theta_t_sqr = 1. - (1 - n_dot_i * n_dot_i) / (eta * eta);
+        if(theta_t_sqr > 0) {
+            return F0 + (Real(1) - F0) * pow(max(1 - sqrt(theta_t_sqr), Real(0)), Real(5));
+        } else {
+            return Real(1);
+        }
+    }
+    return F0 + (Real(1) - F0) *
+        pow(max(1 - n_dot_i, Real(0)), Real(5));
+}
+
 inline Real GTR2(Real n_dot_h, Real roughness) {
     Real alpha = roughness * roughness;
     Real a2 = alpha * alpha;

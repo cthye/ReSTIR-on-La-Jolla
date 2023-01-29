@@ -1,4 +1,5 @@
 #include "../microfacet.h"
+#include <iostream>
 
 Spectrum eval_op::operator()(const DisneySheen &bsdf) const {
     if (dot(vertex.geometric_normal, dir_in) < 0 ||
@@ -20,6 +21,7 @@ Spectrum eval_op::operator()(const DisneySheen &bsdf) const {
     Spectrum tint = make_const_spectrum(1.);
     if (L > 0) tint = base_color / luminance(base_color);
     Spectrum C = (1 - sheen_tint) + tint * sheen_tint;
+    // std::cout <<  C * pow((1 - fabs(dot(half_vector, dir_out))), 5) * fabs(dot(frame.n, dir_out)) << std::endl;
     return C * pow((1 - fabs(dot(half_vector, dir_out))), 5) * fabs(dot(frame.n, dir_out));
 }
 

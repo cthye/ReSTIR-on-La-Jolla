@@ -33,6 +33,8 @@ Spectrum eval_op::operator()(const DisneyGlass &bsdf) const {
 
     // Fresnel reflection
     Real F = fresnel_dielectric(h_dot_in, eta);
+    // Real F = schlick_fresnel_2(h_dot_in, eta);
+
 
     //normal distribution funciton term
     Real D = anisotropic_GGX(roughness, anisotropic, to_local(frame, half_vector));

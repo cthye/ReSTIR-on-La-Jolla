@@ -13,10 +13,10 @@
 			<rgb name="reflectance" value="0.5 0.5 0.5"/>
 		</bsdf> -->
 
-		<bsdf type="roughplastic">
+		<!-- <bsdf type="roughplastic">
 			<rgb name="diffuseReflectance" value="0.0 0.0 0.0"/>
 			<float name="roughness" value="0.5"/>
-		</bsdf>
+		</bsdf> -->
 
 		<!-- <bsdf type="disneydiffuse">
 			<rgb name="baseColor" value="0.5 0.5 0.5"/>
@@ -24,24 +24,49 @@
 			<float name="subsurface" value="0.0"/>
 		</bsdf> -->
 
-<!-- 		<bsdf type="disneymetal">
+		<!-- <bsdf type="disneymetal">
 			<rgb name="baseColor" value="0.5 0.5 0.5"/>
 			<float name="roughness" value="0.2"/>
 			<float name="anisotropic" value="0.5"/>
 		</bsdf> -->
 
-<!-- 		<bsdf type="disneyclearcoat">
+		<!-- <bsdf type="disneyclearcoat">
 			<float name="clearcoatGloss" value="0.5"/>
 		</bsdf> -->
 
-<!-- 		<bsdf type="disneysheen">
-			<rgb name="baseColor" value="0.5 0.5 0.5"/>
+		<!-- <bsdf type="disneyglass">
+			<rgb name="baseColor" value="0.82 0.67 0.16"/>
+			<float name="roughness" value="0.1"/>
+			<float name="anisotropic" value="0.8"/>
+			<float name="anisotropic" value="0.0"/>
+			<float name="eta" value="2.0"/>
 		</bsdf> -->
+		<!-- <bsdf type="disneysheen">
+			<rgb name="baseColor" value="0.82 0.67 0.16"/>
+			<float name="sheenTint" value="1"/>
+		</bsdf> -->
+		<bsdf type="disneybsdf">
+			<rgb name="baseColor" value="0.82 0.67 0.16"/>
+			<float name="specularTransmission" value="0.5"/>
+			<float name="metallic" value="0.5"/>
+			<float name="subsurface" value="0.5"/>
+			<float name="specular" value="0.5"/>
+			<float name="roughness" value="0.1"/>
+			<float name="specularTint" value="1"/>
+			<float name="anisotropic" value="0.5"/>
+			<float name="sheen" value="0.5"/>
+			<float name="sheenTint" value="0.5"/>
+			<float name="clearcoat" value="0.5"/>
+			<float name="clearcoatGloss" value="0.5"/>
+			<float name="eta" value="1.5"/>
+		</bsdf>
 	</shape>
 
 	<shape type="sphere">
 		<point name="center" x="0" y="0" z="-10"/>
 		<!-- <point name="center" x="10" y="0" z="0"/> -->
+		<!-- <point name="center" x="10" y="0" z="10"/> -->
+
 		<float name="radius" value="0.1"/>
 
 		<emitter type="area">

@@ -45,7 +45,7 @@
 			<rgb name="baseColor" value="0.82 0.67 0.16"/>
 			<float name="sheenTint" value="1"/>
 		</bsdf> -->
-		<bsdf type="disneybsdf">
+		<!-- <bsdf type="disneybsdf">
 			<rgb name="baseColor" value="0.82 0.67 0.16"/>
 			<float name="specularTransmission" value="0.5"/>
 			<float name="metallic" value="0.5"/>
@@ -59,7 +59,7 @@
 			<float name="clearcoat" value="0.5"/>
 			<float name="clearcoatGloss" value="0.5"/>
 			<float name="eta" value="1.5"/>
-		</bsdf>
+		</bsdf> -->
 	</shape>
 
 	<shape type="sphere">

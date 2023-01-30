@@ -31,7 +31,7 @@
 		<bsdf type="disneybsdf">
 			<rgb name="baseColor" value="0.1 0.1 0.3"/>
 			<float name="specularTransmission" value="0.0"/>
-			<float name="metallic" value="0.0"/>
+			<float name="metallic" value="1.0"/>
 			<float name="subsurface" value="0.0"/>
 			<float name="specular" value="0.0"/>
 			<float name="roughness" value="0.9"/>

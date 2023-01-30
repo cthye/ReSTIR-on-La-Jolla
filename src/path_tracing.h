@@ -321,6 +321,11 @@ Spectrum path_tracing(const Scene &scene,
         ray = bsdf_ray;
         vertex = *bsdf_vertex;
         current_path_throughput = current_path_throughput * (G * f) / (p2 * rr_prob);
+        // if(current_path_throughput.x > 1 && current_path_throughput.y > 1 && current_path_throughput.z > 1) {
+        //         std::cout << p2 << ' ' << f << ' ' << current_path_throughput << std::endl;
+        // }
     }
+
+
     return radiance;
 }

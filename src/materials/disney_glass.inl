@@ -116,13 +116,18 @@ std::optional<BSDFSampleRecord>
     Real eta = dot(vertex.geometric_normal, dir_in) > 0 ? bsdf.eta : 1 / bsdf.eta;
     Real roughness = eval(
         bsdf.roughness, vertex.uv, vertex.uv_screen_size, texture_pool);
+    Real anisotropic = eval(
+        bsdf.anisotropic, vertex.uv, vertex.uv_screen_size, texture_pool);
     // Clamp roughness to avoid numerical issues.
     roughness = std::clamp(roughness, Real(0.01), Real(1));
     // Sample a micro normal and transform it to world space -- this is our half-vector.
-    Real alpha = roughness * roughness;
+    // Real alpha = roughness * roughness;
+    Vector2 alpha = aniso_alpha(roughness, anisotropic);
     Vector3 local_dir_in = to_local(frame, dir_in);
+    // Vector3 local_micro_normal =
+    //     sample_visible_normals(local_dir_in, alpha, rnd_param_uv);
     Vector3 local_micro_normal =
-        sample_visible_normals(local_dir_in, alpha, rnd_param_uv);
+        sample_visible_normals_with_aniso(local_dir_in, alpha, rnd_param_uv);
 
     Vector3 half_vector = to_world(frame, local_micro_normal);
     // Flip half-vector if it's below surface

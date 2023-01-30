@@ -84,9 +84,11 @@ std::optional<BSDFSampleRecord>
     // VNDF sampling
 
     Real roughness = eval(bsdf.roughness, vertex.uv, vertex.uv_screen_size, texture_pool);
-    Real alpha = roughness * roughness;
+    Real anisotropic = eval(bsdf.anisotropic, vertex.uv, vertex.uv_screen_size, texture_pool);
+
+    Vector2 alpha = aniso_alpha(roughness, anisotropic);
     Vector3 dir_in_local = to_local(frame, dir_in);
-    Vector3 local_micro_normal = sample_visible_normals(dir_in_local, alpha, rnd_param_uv);
+    Vector3 local_micro_normal = sample_visible_normals_with_aniso(dir_in_local, alpha, rnd_param_uv);
 
     Vector3 half_vector = to_world(frame, local_micro_normal);
     Vector3 reflected = normalize(-dir_in + 2 * dot(dir_in, half_vector) * half_vector);

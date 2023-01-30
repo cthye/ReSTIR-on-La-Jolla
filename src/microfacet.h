@@ -139,6 +139,13 @@ inline Real smith_masking_gtr4(Real clearcoat_gloss, const Vector3 &w_local) {
     return 1. / (1. + lambda);
 }
 
+inline Vector2 aniso_alpha(Real roughness, Real anisotropic) {
+    Real alpha_min = 0.0001;
+    Real aspect = sqrt (1 - 0.9 * anisotropic);
+    Real alpha_x = fmax(alpha_min, roughness * roughness / aspect);
+    Real alpha_y = fmax(alpha_min, roughness * roughness * aspect);
+    return Vector2{alpha_x, alpha_y};
+}
 /// See "Sampling the GGX Distribution of Visible Normals", Heitz, 2018.
 /// https://jcgt.org/published/0007/04/01/
 inline Vector3 sample_visible_normals(const Vector3 &local_dir_in, Real alpha, const Vector2 &rnd_param) {
@@ -170,4 +177,35 @@ inline Vector3 sample_visible_normals(const Vector3 &local_dir_in, Real alpha, c
 
     // Transforming the normal back to the ellipsoid configuration
     return normalize(Vector3{alpha * hemi_N.x, alpha * hemi_N.y, max(Real(0), hemi_N.z)});
+}
+
+inline Vector3 sample_visible_normals_with_aniso(const Vector3 &local_dir_in, Vector2 alpha, const Vector2 &rnd_param) {
+    // The incoming direction is in the "ellipsodial configuration" in Heitz's paper
+    if (local_dir_in.z < 0) {
+        // Ensure the input is on top of the surface.
+        return -sample_visible_normals_with_aniso(-local_dir_in, alpha, rnd_param);
+    }
+
+    // Transform the incoming direction to the "hemisphere configuration".
+    Vector3 hemi_dir_in = normalize(
+        Vector3{alpha.x * local_dir_in.x, alpha.y * local_dir_in.y, local_dir_in.z});
+
+    // Parameterization of the projected area of a hemisphere.
+    // First, sample a disk.
+    Real r = sqrt(rnd_param.x);
+    Real phi = 2 * c_PI * rnd_param.y;
+    Real t1 = r * cos(phi);
+    Real t2 = r * sin(phi);
+    // Vertically scale the position of a sample to account for the projection.
+    Real s = (1 + hemi_dir_in.z) / 2;
+    t2 = (1 - s) * sqrt(1 - t1 * t1) + s * t2;
+    // Point in the disk space
+    Vector3 disk_N{t1, t2, sqrt(max(Real(0), 1 - t1*t1 - t2*t2))};
+
+    // Reprojection onto hemisphere -- we get our sampled normal in hemisphere space.
+    Frame hemi_frame(hemi_dir_in);
+    Vector3 hemi_N = to_world(hemi_frame, disk_N);
+
+    // Transforming the normal back to the ellipsoid configuration
+    return normalize(Vector3{alpha.x * hemi_N.x, alpha.y * hemi_N.y, max(Real(0), hemi_N.z)});
 }

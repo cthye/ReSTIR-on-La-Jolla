@@ -98,7 +98,7 @@ Spectrum eval_op::operator()(const DisneyBSDF &bsdf) const {
     Spectrum k_s = (1 - specular_tint) + specular_tint * c_tint;
     Spectrum base_color_0 = specular * R0 * (1 - metallic) * k_s + metallic * base_color;
     
-    Spectrum F_metal = base_color_0 + (1. - base_color_0) * pow(1. - h_dot_out, 5);
+    Spectrum F_metal = base_color_0 + (1. - base_color_0) * pow(1. - abs(h_dot_out), 5);
     Real D_metal = anisotropic_GGX(roughness, anisotropic, to_local(frame, half_vector));
     Real G_metal = smith_masking_gtr3(roughness, anisotropic, to_local(frame, dir_in)) * 
                     smith_masking_gtr3(roughness, anisotropic, to_local(frame, dir_out));
@@ -303,10 +303,10 @@ std::optional<BSDFSampleRecord>
         //* ============================== 
         //*  sample glass
         //* ============================== 
-        Real alpha = roughness * roughness;
+        Vector2 alpha = aniso_alpha(roughness, anisotropic);
         Vector3 local_dir_in = to_local(frame, dir_in);
         Vector3 local_micro_normal =
-            sample_visible_normals(local_dir_in, alpha, rnd_param_uv);
+            sample_visible_normals_with_aniso(local_dir_in, alpha, rnd_param_uv);
 
         Vector3 half_vector = to_world(frame, local_micro_normal);
         // Flip half-vector if it's below surface
@@ -355,9 +355,9 @@ std::optional<BSDFSampleRecord>
             //* ============================== 
             //*  sample metal
             //* ============================== 
-            Real alpha = roughness * roughness;
+            Vector2 alpha = aniso_alpha(roughness, anisotropic);
             Vector3 dir_in_local = to_local(frame, dir_in);
-            Vector3 local_micro_normal = sample_visible_normals(dir_in_local, alpha, rnd_param_uv);
+            Vector3 local_micro_normal = sample_visible_normals_with_aniso(dir_in_local, alpha, rnd_param_uv);
             Vector3 half_vector = to_world(frame, local_micro_normal);
             Vector3 reflected = normalize(-dir_in + 2 * dot(dir_in, half_vector) * half_vector);
             return BSDFSampleRecord{
@@ -386,10 +386,10 @@ std::optional<BSDFSampleRecord>
                 //* ============================== 
                 //*  sample glass
                 //* ============================== 
-                Real alpha = roughness * roughness;
+                 Vector2 alpha = aniso_alpha(roughness, anisotropic);
                 Vector3 local_dir_in = to_local(frame, dir_in);
                 Vector3 local_micro_normal =
-                    sample_visible_normals(local_dir_in, alpha, rnd_param_uv);
+                    sample_visible_normals_with_aniso(local_dir_in, alpha, rnd_param_uv);
 
                 Vector3 half_vector = to_world(frame, local_micro_normal);
                 // Flip half-vector if it's below surface

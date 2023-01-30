@@ -47,19 +47,19 @@ Spectrum eval_metal(const DisneyMetal &bsdf, const Vector3 &dir_in, const Vector
 }
 
 Spectrum eval_op::operator()(const DisneyBSDF &bsdf) const {
-    // bool reflect = dot(vertex.geometric_normal, dir_in) *
-    //                dot(vertex.geometric_normal, dir_out) > 0;
+    bool reflect = dot(vertex.geometric_normal, dir_in) *
+                   dot(vertex.geometric_normal, dir_out) > 0;
     // Flip the shading frame if it is inconsistent with the geometry normal
     Frame frame = vertex.shading_frame;
     if (dot(frame.n, dir_in) * dot(vertex.geometric_normal, dir_in) < 0) {
         frame = -frame;
     }
     // Homework 1: implement this!
-    bool inside = dot(vertex.geometric_normal, dir_in) <= 0;
-    if(inside) {
-        return eval(DisneyGlass{bsdf.base_color, bsdf.roughness, bsdf.anisotropic, bsdf.eta},
-                          dir_in, dir_out, vertex, texture_pool, dir); 
-    }
+    // bool inside = dot(vertex.geometric_normal, dir_in) <= 0;
+    // if(inside) {
+    //     return eval(DisneyGlass{bsdf.base_color, bsdf.roughness, bsdf.anisotropic, bsdf.eta},
+    //                       dir_in, dir_out, vertex, texture_pool, dir); 
+    // }
 
     Real specular_transmission = eval(bsdf.specular_transmission, vertex.uv, vertex.uv_screen_size, texture_pool);
     Real metallic = eval(bsdf.metallic, vertex.uv, vertex.uv_screen_size, texture_pool);
@@ -84,30 +84,32 @@ Spectrum eval_op::operator()(const DisneyBSDF &bsdf) const {
 
     Spectrum f_glass = eval(DisneyGlass{bsdf.base_color, bsdf.roughness, bsdf.anisotropic, bsdf.eta},
                           dir_in, dir_out, vertex, texture_pool, dir);  
+    
+    bool inside = dot(vertex.geometric_normal, dir_in) <= 0;
+    Real w_diffuse = inside ? Real(0) : (1 - specular_transmission) * (1 - metallic);
+    Real w_sheen = inside ? Real(0) : (1 - metallic) * sheen;
+    Real w_metal = inside ? Real(0) : (1 - specular_transmission * (1 - metallic));
+    Real w_clearcoat = inside ? Real(0) : 0.25 * clearcoat;
+    Real w_glass = (1 - metallic) * specular_transmission;
                                                             
-    return (1 - specular_transmission) * (1 - metallic) * f_diffuse + 
-           (1 - metallic) * sheen * f_sheen + 
-           (1 - specular_transmission * (1 - metallic)) * f_metal + 
-           0.25 * clearcoat * f_clear_coat + 
-           (1 - metallic) * specular_transmission * f_glass; 
+    if (reflect) {
+        return w_diffuse * f_diffuse + w_sheen * f_sheen + w_metal * f_metal + 
+               w_clearcoat * f_clear_coat + w_glass * f_glass;
+    } else {
+        return w_glass * f_glass;
+    }                                                   
 }
 
 Real pdf_sample_bsdf_op::operator()(const DisneyBSDF &bsdf) const {
     //??? how to use reflect
-    // bool reflect = dot(vertex.geometric_normal, dir_in) *
-    //                dot(vertex.geometric_normal, dir_out) > 0;
+    bool reflect = dot(vertex.geometric_normal, dir_in) *
+                   dot(vertex.geometric_normal, dir_out) > 0;
     // Flip the shading frame if it is inconsistent with the geometry normal
     Frame frame = vertex.shading_frame;
     if (dot(frame.n, dir_in) * dot(vertex.geometric_normal, dir_in) < 0) {
         frame = -frame;
     }
     // Homework 1: implement this!
-    bool inside = dot(vertex.geometric_normal, dir_in) <= 0;
-    if(inside) {
-        return pdf_sample_bsdf(DisneyGlass{bsdf.base_color, bsdf.roughness, bsdf.anisotropic, bsdf.eta},
-                            dir_in, dir_out, vertex, texture_pool, dir); 
-    }
-
     Real pdf_diffuse = pdf_sample_bsdf(DisneyDiffuse{bsdf.base_color, bsdf.roughness, bsdf.subsurface},
                           dir_in, dir_out, vertex, texture_pool, dir);
 
@@ -132,23 +134,22 @@ Real pdf_sample_bsdf_op::operator()(const DisneyBSDF &bsdf) const {
                      0.25 * clearcoat + 
                      (1 - metallic) * specular_transmission;
     assert(normalize > 0);
-    Real pdf = (1 - specular_transmission) * (1 - metallic) / normalize * pdf_diffuse + 
-           (1 - specular_transmission * (1 - metallic)) / normalize * pdf_metal + 
-           (1 - metallic) * specular_transmission / normalize * pdf_glass +
-           0.25 * clearcoat / normalize * pdf_clear_coat;
-    // std::cout << pdf << std::endl;
-    // if ((1 - specular_transmission) * (1 - metallic) / normalize * pdf_diffuse  < 0.000001) {
-    //     std::cout << pdf_diffuse << std::endl;
-    // }
-    // if(pdf < 0.001) {
-    //     std::cout << "diff" << pdf_diffuse << std::endl;
-    //     std::cout << "mental" << pdf_metal << std::endl;
-    //     std::cout << "glass" << pdf_glass << std::endl;
-    //     std::cout << "coat" << pdf_clear_coat << std::endl;
-    // }
-    assert(pdf >= 0);
-    pdf = std::clamp(pdf, Real(0.001), Real(10000000000));
-    return pdf;
+    
+    bool inside = dot(vertex.geometric_normal, dir_in) <= 0;
+   
+    Real w_diffuse = inside ? 0 : (1 - specular_transmission) * (1 - metallic) / normalize;
+    Real w_metal = inside ? 0 : (1 - specular_transmission * (1 - metallic)) / normalize;
+    Real w_glass = inside ? 1 : (1 - metallic) * specular_transmission / normalize;
+    Real w_clearcoat = inside ? 0 : 0.25 * clearcoat / normalize;
+    
+    if(reflect) {
+        return w_diffuse * pdf_diffuse + 
+            w_metal * pdf_metal + 
+            w_glass * pdf_glass +
+            w_clearcoat * pdf_clear_coat;
+    } else {
+        return pdf_glass;
+    }
 }
 
 std::optional<BSDFSampleRecord>

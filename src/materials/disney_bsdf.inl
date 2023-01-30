@@ -134,15 +134,18 @@ Spectrum eval_op::operator()(const DisneyBSDF &bsdf) const {
         f_clearcoat = make_const_spectrum(0);
     }
 
+    Spectrum f_bsdf;
     if(reflect) {
-        return  w_diffuse * f_diffuse + 
+        f_bsdf = w_diffuse * f_diffuse + 
                 w_metal * f_metal + 
                 w_sheen * f_sheen + 
                 w_clearcoat * f_clearcoat + 
                 w_glass * f_glass;
     } else {
-        return w_glass * f_glass;
+        f_bsdf = w_glass * f_glass;
     }
+
+    return f_bsdf;
 }
 
 Real pdf_sample_bsdf_op::operator()(const DisneyBSDF &bsdf) const {
@@ -175,6 +178,7 @@ Real pdf_sample_bsdf_op::operator()(const DisneyBSDF &bsdf) const {
     Real w_clearcoat = 0.25 * clearcoat ;
     Real w_glass = (1 - metallic) * specular_transmission;
     Real factor = w_diffuse + w_metal + w_clearcoat + w_glass;
+    assert(factor > 0);
     w_diffuse /= factor; 
     w_metal /= factor; 
     w_clearcoat /= factor; 
@@ -236,7 +240,6 @@ Real pdf_sample_bsdf_op::operator()(const DisneyBSDF &bsdf) const {
     Real D_clearcoat = clearcoat_GGX(clearcoat_gloss, to_local(frame, half_vector));
     Real pdf_clearcoat = D_clearcoat * abs(dot(frame.n, half_vector)) / (4 * abs(h_dot_out));
         
-    assert(factor > 0);
     bool inside = dot(vertex.geometric_normal, dir_in) <= 0;
     if(inside) {
         w_diffuse = 0;

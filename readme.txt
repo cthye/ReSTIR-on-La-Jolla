@@ -70,7 +70,7 @@ between Trowbridge-Reitz and Beckmann? Why did Disney folks choose to use Trowbr
 ## Sheen
 1. Render the simple_sphere scene with the sheen BRDF. What do you see? Why? What happens if you
 change the position of the light source?
-- Nothing....(????)
+- If the light comes from the view direction, it shows nothing...
 - If the light direction is the vertical/opposite direction of view direction, it shows tinted specular at grazing angle because more light is transmitted through the object.
 
 2. Play with the parameter sheenTint, how does it affect the appearance? Why?

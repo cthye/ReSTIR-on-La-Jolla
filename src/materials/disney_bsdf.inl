@@ -256,7 +256,6 @@ Real pdf_sample_bsdf_op::operator()(const DisneyBSDF &bsdf) const {
     }
 
     assert(pdf >= 0);
-    // pdf = std::clamp(pdf, Real(0.001), Real(10000000000));
     return pdf;
 }
 

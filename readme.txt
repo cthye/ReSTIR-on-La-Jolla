@@ -80,7 +80,7 @@ change the position of the light source?
 3. In Autodesk Standard Surface, the sheen is modeled by a microfacet BRDF [4]. What are the pros and cons between the Autodesk approach and the Disney approach? What is your preference?
 - Pros: Microfacet BRDF based sheen looks more physically realistic and softer; stimulates backward scattering.
 - Cons: More complex
-- I'd prefer the autodesk's since it's more physically realisitc and accurate
+- I'd prefer the autodesk's since it's more physically realistic and accurate
 
 ## Put together
 1. What are the differences between the specular and metallic parameters? How do they affect the
@@ -90,13 +90,13 @@ appearance?
 - If the metallic parameter is larger, the object has sharper and stronger specular
 
 2. What are the differences between the roughness and clearcoat_gloss parameters? How do they affect the appearance?
-- Clear coat gloss describe the specular reflection: the object looks more reflective as clearcoat gloss grows (despite how rough it's, it always shows reflective like a dielectric material) 
-- Roughness describe the diffuse reflection: the object looks more diffuse as roughness grows.
+- Clearcoat gloss describe the specular reflection on the clearcoat layer (top of the material): the object looks more reflective as clearcoat gloss grows (despite how rough it's, it always shows reflective like a dielectric material) 
+- Roughness describe the diffuse reflection of the others': the object looks more diffuse as roughness grows.
 
 3. Play with the specularTint parameter. How does it affect the appearance?
 - It tints the incident specular towards the base color. If the specularTint is larger, the specular is more colorful (like the base color)
 
-4. The roughness parameter affects many components of the BSDFs at once (e.g., both the diffuse and metal BRDF use the roughenss parameter). How do you feel about this? If you are an artist using the Disney BSDF, would you want to have a separate roughness parameter for each component?
+4. The roughness parameter affects many components of the BSDFs at once (e.g., both the diffuse and metal BRDF use the roughness parameter). How do you feel about this? If you are an artist using the Disney BSDF, would you want to have a separate roughness parameter for each component?
 - Hard to understand and control the visual affect. Yes.
 
 ## The final task

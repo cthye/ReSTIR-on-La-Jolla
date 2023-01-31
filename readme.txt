@@ -44,8 +44,8 @@ between Trowbridge-Reitz and Beckmann? Why did Disney folks choose to use Trowbr
 - Clearcoat is more blur: its DNF has longer tail
 
 2. For coating, Autodesk Standard Surface uses a standard Trowbridge-Reitz microfacet distribution, instead of the modified normal distribution function proposed by Burley. What are the pros and cons? What is your preference?
-- Pros: can be anisotropic; has geometric meaning
-- Cons: more complex (????)
+- Pros: can be anisotropic; has geometric meaning; has a longer tail distribution
+- Cons: more computation
 - I'd prefer standard Trowbridge-Reitz microfacet distribution because hard-coded ior is confusing and may not be accurate all the time.
 
 3. Why do Burley limit the clearcoat BRDF to be isotropic?
@@ -98,3 +98,6 @@ appearance?
 
 4. The roughness parameter affects many components of the BSDFs at once (e.g., both the diffuse and metal BRDF use the roughenss parameter). How do you feel about this? If you are an artist using the Disney BSDF, would you want to have a separate roughness parameter for each component?
 - Hard to understand and control the visual affect. Yes.
+
+## The final task
+Please check with the scenes in side the "proj1" directory. Besides the test scene, I also rendered other scenes made in Blender.

@@ -2,8 +2,9 @@
 
 <scene version="0.5.0" >
 	<integrator type="path" >
-		<integer name="maxDepth" value="65" />
-		<boolean name="strictNormals" value="true" />
+		<!-- <integer name="maxDepth" value="65" /> -->
+		<integer name="maxDepth" value="-1"/>
+		<!-- <boolean name="strictNormals" value="true" /> -->
 	</integrator>
 	<sensor type="perspective" >
 		<float name="fov" value="35" />
@@ -11,8 +12,8 @@
 			<matrix value="-0.721367 -0.373123 -0.583445 3.04068 -8.26273e-008 0.842456 -0.538765 3.17153 0.692553 -0.388647 -0.60772 3.20454 0 0 0 1"/>
 		</transform>
 		<!-- <sampler type="sobol" >
-			<integer name="sampleCount" value="64" /> -->
-		<!-- </sampler> -->
+			<integer name="sampleCount" value="64" />
+		</sampler> -->
 		<film type="ldrfilm" >
 			<integer name="width" value="1280" />
 			<integer name="height" value="720" />
@@ -23,31 +24,58 @@
 			<rfilter type="tent" />
 		</film>
 	</sensor>
-	<!-- <bsdf type="disneybsdf" id="RoughMetal" > -->
-	<bsdf type="disneybsdf" >
-		<float name="alpha" value="0.1" />
-		<string name="distribution" value="beckmann" />
-		<float name="extEta" value="1" />
-		<rgb name="specularReflectance" value="1, 1, 1"/>
-		<rgb name="eta" value="0.200438, 0.924033, 1.10221"/>
-		<rgb name="k" value="3.91295, 2.45285, 2.14219"/>
+	<bsdf type="twosided" id="RoughMetal" >
+		<!-- <bsdf type="roughconductor" > -->
+		<bsdf type="disneybsdf" >
+			<!-- <float name="alpha" value="0.1" />
+			<string name="distribution" value="beckmann" />
+			<float name="extEta" value="1" />
+			<rgb name="specularReflectance" value="1, 1, 1"/>
+			<rgb name="eta" value="0.200438, 0.924033, 1.10221"/>
+			<rgb name="k" value="3.91295, 2.45285, 2.14219"/> -->
+			<rgb name="baseColor" value="0.1 0.1 0.3"/>
+			<float name="specularTransmission" value="0.0"/>
+			<float name="metallic" value="1.0"/>
+			<float name="subsurface" value="0.0"/>
+			<float name="specular" value="0.0"/>
+			<float name="roughness" value="0.9"/>
+			<float name="specularTint" value="0.0"/>
+			<float name="anisotropic" value="0.0"/>
+			<float name="sheen" value="0.0"/>
+			<float name="sheenTint" value="0.0"/>
+			<float name="clearcoat" value="0.0"/>
+			<float name="clearcoatGloss" value="0.0"/>
+			<float name="eta" value="1.5"/>
+		</bsdf>
 	</bsdf>
-	<!-- </bsdf> -->
-	<!-- <bsdf type="twosided" id="Material" > -->
-	<bsdf type="disneybsdf" >
-		<float name="intIOR" value="1.7" />
-		<float name="extIOR" value="1" />
-		<float name="thickness" value="5" />
-		<rgb name="sigmaA" value="0.1, 0.2, 0.5"/>
-		<ref id="RoughMetal" />
+	<bsdf type="twosided" id="MaterialCoating" >
+		<bsdf type="disneybsdf" >
+			<rgb name="baseColor" value="0.0 0.0 0.0"/>
+			<float name="specularTransmission" value="0.5"/>
+			<float name="metallic" value="0.0"/>
+			<float name="subsurface" value="0.0"/>
+			<float name="specular" value="0.0"/>
+			<float name="roughness" value="0.9"/>
+			<float name="specularTint" value="0.0"/>
+			<float name="anisotropic" value="0.0"/>
+			<float name="sheen" value="0.0"/>
+			<float name="sheenTint" value="0.0"/>
+			<float name="clearcoat" value="1.0"/>
+			<float name="clearcoatGloss" value="1.0"/>
+			<float name="eta" value="1.5"/>
+		</bsdf>
 	</bsdf>
-	<!-- </bsdf> -->
 	<bsdf type="twosided" id="Stand" >
 		<bsdf type="diffuse" >
 			<rgb name="reflectance" value="0.2, 0.2, 0.2"/>
 		</bsdf>
 	</bsdf>
-	<bsdf type="twosided" id="Floor" >
+	
+	<bsdf type="diffuse" id="__diffmat">
+		<rgb name="reflectance" value="0.18 0.18 0.18"/>
+	</bsdf>
+	<!-- ==== -->
+	<!-- <bsdf type="twosided" id="Floor" >
 		<bsdf type="diffuse" >
 			<texture name="reflectance" type="checkerboard" >
 				<rgb name="color1" value="0.325, 0.31, 0.25"/>
@@ -64,20 +92,44 @@
 			<matrix value="-1.88298 1.9602 2.50299e-007 -0.708772 -2.37623e-007 1.18811e-007 -2.71809 0 -1.9602 -1.88298 8.90586e-008 -0.732108 0 0 0 1"/>
 		</transform>
 		<ref id="Floor" />
+	</shape> -->
+	
+	<!-- ======= -->
+	<texture type="checkerboard" id="__planetex">
+		<rgb name="color0" value="0.4"/>
+		<rgb name="color1" value="0.2"/>
+		<float name="uoffset" value="0" />
+		<float name="voffset" value="0" />
+		<float name="uscale" value="10" />
+		<float name="vscale" value="10" />
+	</texture>
+
+	<bsdf type="diffuse" id="__planemat">
+		<ref name="reflectance" id="__planetex"/>
+	</bsdf>
+
+	<shape type="rectangle" >
+		<transform name="toWorld" >
+			<matrix value="-1.88298 1.9602 2.50299e-007 -0.708772 -2.37623e-007 1.18811e-007 -2.71809 0 -1.9602 -1.88298 8.90586e-008 -0.732108 0 0 0 1"/>
+		</transform>
+		<ref name="bsdf" id="__planemat"/>
 	</shape>
+	<!-- ======= -->
+
 	<shape type="obj" >
 		<string name="filename" value="models/Mesh001.obj" />
 		<transform name="toWorld" >
 			<matrix value="0.482906 0 0 0.0571719 0 0.482906 0 0.213656 0 0 0.482906 0.0682078 0 0 0 1"/>
 		</transform>
-		<ref id="Material" />
+		<ref id="RoughMetal" />
 	</shape>
 	<shape type="obj" >
 		<string name="filename" value="models/Mesh002.obj" />
 		<transform name="toWorld" >
 			<matrix value="0.482906 0 0 0.156382 0 0.482906 0 0.777229 0 0 0.482906 0.161698 0 0 0 1"/>
 		</transform>
-		<ref id="Material" />
+		<!-- <ref id="Material" /> -->
+		<ref id="RoughMetal" />
 	</shape>
 	<shape type="obj" >
 		<string name="filename" value="models/Mesh000.obj" />

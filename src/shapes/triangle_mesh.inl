@@ -67,11 +67,7 @@ void init_sampling_dist_op::operator()(TriangleMesh &mesh) const {
         Vector3 v2 = mesh.positions[index[2]];
         Vector3 e1 = v1 - v0;
         Vector3 e2 = v2 - v0;
-        if(length(cross(e1, e2)) <= 0) {
-            tri_areas[tri_id] = 0.0000001;
-        } else {
-            tri_areas[tri_id] = length(cross(e1, e2)) / 2;
-        }
+        tri_areas[tri_id] = length(cross(e1, e2)) / 2;
         total_area += tri_areas[tri_id];
     }
     mesh.triangle_sampler = make_table_dist_1d(tri_areas);

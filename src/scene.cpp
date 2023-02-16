@@ -48,7 +48,6 @@ Scene::Scene(const RTCDevice &embree_device,
     std::vector<Real> power(this->lights.size());
     for (int i = 0; i < (int)this->lights.size(); i++) {
         power[i] = light_power(this->lights[i], *this);
-        assert(power[i] > 0);
     }
     light_dist = make_table_dist_1d(power);
 }

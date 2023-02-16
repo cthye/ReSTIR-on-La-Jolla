@@ -4,6 +4,7 @@
 	<integrator type="volpath">
 		<integer name="maxDepth" value="6"/>
 		<integer name="version" value="3"/>
+		<!-- <integer name="version" value="4"/> -->
 	</integrator>
 
 	<medium type="homogeneous" id="medium1">
@@ -11,9 +12,9 @@
 		<rgb name="sigmaS" value="5 5 5"/>
 		<float name="scale" value="0.05"/>
 
-<!-- 		<phase type="hg">
-			<float name="g" value="0.5"/>
-		</phase> -->
+		<!-- <phase type="hg">
+			<float name="g" value="-0.5"/>
+		</phase>  -->
 	</medium>
 
 	<medium type="homogeneous" id="medium2">
@@ -21,8 +22,8 @@
 		<rgb name="sigmaS" value="0.5 0.5 0.5"/>
 		<float name="scale" value="1"/>
 
-<!-- 		<phase type="hg">
-			<float name="g" value="0.5"/>
+		<!-- <phase type="hg">
+			<float name="g" value="-0.5"/>
 		</phase> -->
 	</medium>
 

@@ -3,7 +3,7 @@
 #include <pcg.h>
 #include <phase_function.h>
 
-bool debug = false;
+#include "debug.h"
 #define INF infinity<Real>()
 
 // The simplest volumetric renderer: 
@@ -158,13 +158,12 @@ Spectrum vol_path_tracing_3(const Scene &scene,
         Spectrum trans_pdf = make_const_spectrum(1);
         
         //* homogenous, sigma_a & sigma_t can be derived from any points in the medium...
-        Medium current_medium = scene.media[current_medium_id];
-        Spectrum sigma_a = get_sigma_a(current_medium, make_zero_spectrum());
-        Spectrum sigma_s = get_sigma_s(current_medium, make_zero_spectrum());
-        Spectrum sigma_t = sigma_a + sigma_s;
-        PhaseFunction phase_function = get_phase_function(current_medium);
-        // assert(current_medium_exist);
         if (current_medium_id != -1) {
+            Medium current_medium = scene.media[current_medium_id];
+            Spectrum sigma_a = get_sigma_a(current_medium, make_zero_spectrum());
+            Spectrum sigma_s = get_sigma_s(current_medium, make_zero_spectrum());
+            Spectrum sigma_t = sigma_a + sigma_s;
+
             Real u = next_pcg32_real<Real>(rng);
             Spectrum t = - log(1 - u) / sigma_t;
 
@@ -214,7 +213,13 @@ Spectrum vol_path_tracing_3(const Scene &scene,
             break;
         }
 
-        if (scatter) {
+        if (scatter && (current_medium_id != -1)) {
+            Medium current_medium = scene.media[current_medium_id];
+            Spectrum sigma_a = get_sigma_a(current_medium, make_zero_spectrum());
+            Spectrum sigma_s = get_sigma_s(current_medium, make_zero_spectrum());
+            Spectrum sigma_t = sigma_a + sigma_s;
+            PhaseFunction phase_function = get_phase_function(current_medium);
+
             Vector2 phase_rnd_param_uv{next_pcg32_real<Real>(rng), next_pcg32_real<Real>(rng)};
             std::optional<Vector3> next_dir_ = sample_phase_function(phase_function, -ray.dir, phase_rnd_param_uv);
             Vector3f next_dir;
@@ -257,14 +262,13 @@ Spectrum vol_path_tracing_3(const Scene &scene,
 
 Spectrum next_event_estimation(const Scene& scene, Vector3& p, const Ray& ray, const int current_medium_id, 
                             pcg32_state& rng, int& bounces, const Spectrum& sigma_t, const PhaseFunction& phase_function, 
-                            Spectrum& multi_trans_pdf, RayDifferential& raydiff) {
+                            Spectrum& multi_trans_pdf, RayDifferential& raydiff, const int x, const int y) {
     Vector2 light_uv{next_pcg32_real<Real>(rng), next_pcg32_real<Real>(rng)};
     Real light_w = next_pcg32_real<Real>(rng);
     Real shape_w = next_pcg32_real<Real>(rng);
     int light_id = sample_light(scene, light_w);
     const Light &light = scene.lights[light_id];
     //? update last position that issue next event estimation
-    Vector3 nee_p_cache = p; 
     PointAndNormal p_prime =
         sample_point_on_light(light, p, light_uv, shape_w, scene);
     
@@ -293,8 +297,8 @@ Spectrum next_event_estimation(const Scene& scene, Vector3& p, const Ray& ray, c
             // account for transmittance to next_t
             
             T_light *= exp(-sigma_t * next_t);
-            if(debug) {
-                if(!next_t) std::cout << "next_t " << next_t << std::endl;
+            if(debug(x, y)) {
+                std::cout << "next_t " << next_t << std::endl;
                 std::cout << "sigma_t " << sigma_t << std::endl;
                 std::cout << "exp " << exp(-sigma_t * next_t) << std::endl;
                 std::cout << "T_light " << T_light << std::endl;
@@ -337,8 +341,11 @@ Spectrum next_event_estimation(const Scene& scene, Vector3& p, const Ray& ray, c
         //? need to update dir_pdf here?
         Spectrum pdf_phase = pdf_sample_phase(phase_function, -ray.dir, dir_light) * G * p_trans_dir;
         Spectrum w = (pdf_nee * pdf_nee) / (pdf_nee * pdf_nee + pdf_phase * pdf_phase);
-        if(debug) {
+        if(debug(x, y)) {
             std::cout << "contrib " << w * contrib << std::endl;
+            std::cout << "G " << G << std::endl;
+            std::cout << "f " << f << std::endl;
+            std::cout << "L " << L << std::endl;
         }
         return w * contrib;
     }         
@@ -353,6 +360,8 @@ Spectrum vol_path_tracing_4(const Scene &scene,
                             int x, int y, /* pixel coordinates */
                             pcg32_state &rng) {
     // Homework 2: implememt this!
+    if(debug(x, y))
+        std::cout << "========= new round =============" << std::endl;
     int w = scene.camera.width, h = scene.camera.height;
     Vector2 screen_pos((x + next_pcg32_real<Real>(rng)) / w,
                        (y + next_pcg32_real<Real>(rng)) / h);
@@ -360,15 +369,6 @@ Spectrum vol_path_tracing_4(const Scene &scene,
     //disable ray differentials
     RayDifferential ray_diff = RayDifferential{Real(0), Real(0)};
 
-    //?? when will current_medium not exist (except for configuration error)
-    // bool current_medium_exist = true; // assume the configuration is correct...
-    // Medium current_medium;
-    // if (scene.camera.medium_id >= size(scene.media) || scene.camera.medium_id < 0) {
-    //     current_medium_exist = false;
-    // } else {
-    //     current_medium_exist = true;
-    //     current_medium = scene.media[scene.camera.medium_id];
-    // }
     int current_medium_id = scene.camera.medium_id;
 
     Spectrum radiance = make_zero_spectrum();
@@ -394,14 +394,11 @@ Spectrum vol_path_tracing_4(const Scene &scene,
         Spectrum transmittance = make_const_spectrum(1);
         Spectrum trans_pdf = make_const_spectrum(1);
         
-        //* homogenous, sigma_a & sigma_t can be derived from any points in the medium...
-        Medium current_medium = scene.media[current_medium_id];
-        Spectrum sigma_a = get_sigma_a(current_medium, make_zero_spectrum());
-        Spectrum sigma_s = get_sigma_s(current_medium, make_zero_spectrum());
-        Spectrum sigma_t = sigma_a + sigma_s;
-        PhaseFunction phase_function = get_phase_function(current_medium);
-        // assert(current_medium_exist);
         if (current_medium_id != -1) {
+            Medium current_medium = scene.media[current_medium_id];
+            Spectrum sigma_a = get_sigma_a(current_medium, make_zero_spectrum());
+            Spectrum sigma_s = get_sigma_s(current_medium, make_zero_spectrum());
+            Spectrum sigma_t = sigma_a + sigma_s;
             Real u = next_pcg32_real<Real>(rng);
             Spectrum t = - log(1 - u) / sigma_t;
 
@@ -443,7 +440,7 @@ Spectrum vol_path_tracing_4(const Scene &scene,
                     Spectrum w = (dir_pdf_ * dir_pdf_) / (dir_pdf_ * dir_pdf_ + pdf_nee * pdf_nee);
 
                     radiance += current_path_throughput * emission(*vertex_, -ray.dir, scene) * w;
-                    if(debug) {
+                    if(debug(x, y)) {
                         std::cout << "radiance in phase sampling " << radiance << std::endl;
                     }
                 }
@@ -456,32 +453,38 @@ Spectrum vol_path_tracing_4(const Scene &scene,
 
         //* add one more vertex in path
         if (!scatter && vertex_) {
+            if(debug(x, y) && (*vertex_).material_id != -1) {
+                std::cout << "non index matching interface" << std::endl;
+            }
             if ((*vertex_).material_id == -1) {
                 //* index-matching interface, skip it
-                // bool prev_current_medium_exist = current_medium_exist;
                 current_medium_id = update_medium_id(*vertex_, ray, current_medium_id);
-                // if(debug && (prev_current_medium_exist != current_medium_exist)) {
-                //     std::cout << "after update " << current_medium_exist << std::endl;
-                // }
                 bounces++;
-                // debug = true;
-                // std::cout << "================" << std::endl;
+                if(debug(x, y)) {
+                    std::cout << (*vertex_).shape_id << "index matching interface" << std::endl;
+                }
                 continue;
             }
         }
         
-        if (scatter) {
+        if (scatter && (current_medium_id != -1)) {
+            Medium current_medium = scene.media[current_medium_id];
+            Spectrum sigma_a = get_sigma_a(current_medium, make_zero_spectrum());
+            Spectrum sigma_s = get_sigma_s(current_medium, make_zero_spectrum());
+            Spectrum sigma_t = sigma_a + sigma_s;
+            PhaseFunction phase_function = get_phase_function(current_medium);
             //TODO: combine with next estimation estimation
             //*=========================================================
             //* first do the next estimation estimation
             //*=========================================================
             //??? multiple the rsult with the transmittance and sigma_s
             Vector3 p = ray.org; // current position
-            Spectrum nee = next_event_estimation(scene, p, ray, current_medium_id, rng, bounces, sigma_t, phase_function, multi_trans_pdf, ray_diff);
+            nee_p_cache = p; 
+            Spectrum nee = next_event_estimation(scene, p, ray, current_medium_id, rng, bounces, sigma_t, phase_function, multi_trans_pdf, ray_diff, x, y);
             radiance += current_path_throughput * nee * sigma_s;
-            // if(debug) {
-            //     std::cout << "radiance in nee" << radiance << std::endl;
-            // }
+            if(debug(x, y)) {
+                std::cout << "radiance in nee" << radiance << std::endl;
+            }
 
             //*=========================================================
             //* then do the phase sampling
@@ -521,9 +524,9 @@ Spectrum vol_path_tracing_4(const Scene &scene,
         bounces++;
 
     }
-    // if (debug) {
-    //     std::cout << "return radiance " << radiance << std::endl;
-    // }
+    if (debug(x,y)) {
+        std::cout << "return radiance " << radiance << std::endl;
+    }
     return radiance;
 }
 

@@ -260,9 +260,15 @@ Spectrum vol_path_tracing_3(const Scene &scene,
     return radiance;
 }
 
+Spectrum get_sigma_t(const Scene& scene, int current_medium_id) {
+    Medium current_medium = scene.media[current_medium_id];
+    Spectrum sigma_a = get_sigma_a(current_medium, make_zero_spectrum());
+    Spectrum sigma_s = get_sigma_s(current_medium, make_zero_spectrum());
+    return sigma_a + sigma_s;
+}
+
 Spectrum next_event_estimation(const Scene& scene, Vector3& p, const Ray& ray, const int current_medium_id, 
-                            pcg32_state& rng, int& bounces, const Spectrum& sigma_t, const PhaseFunction& phase_function, 
-                            Spectrum& multi_trans_pdf, RayDifferential& raydiff, const int x, const int y) {
+                            pcg32_state& rng, int& bounces, Spectrum& multi_trans_pdf, RayDifferential& raydiff, const int x, const int y) {
     Vector2 light_uv{next_pcg32_real<Real>(rng), next_pcg32_real<Real>(rng)};
     Real light_w = next_pcg32_real<Real>(rng);
     Real shape_w = next_pcg32_real<Real>(rng);
@@ -278,15 +284,27 @@ Spectrum next_event_estimation(const Scene& scene, Vector3& p, const Ray& ray, c
     int shadow_bounces = 0;
     Spectrum p_trans_dir = make_const_spectrum(1); // for multiple importance sampling
     while(true) {
-        
         Vector3 dir_light = normalize(p_prime.position - p);
         Ray shadow_ray{p, dir_light, get_shadow_epsilon(scene),
                         (1 - get_shadow_epsilon(scene)) *
                         distance(p_prime.position, p)};
         Real next_t = distance(p, p_prime.position);
+        if(debug(x, y)) {
+            std::cout << "p" << p << std::endl;
+            std::cout << "prime" << p_prime.position << std::endl;
+            std::cout << "next_t =====1======" << next_t << std::endl;
+        }
         std::optional<PathVertex> isect = intersect(scene, shadow_ray, raydiff);
         if (isect) {
+            if(debug(x, y) && is_light(scene.shapes[((*isect).shape_id)])) {
+                std::cout << "hit light " << std::endl;
+            }
             next_t = distance(p, (*isect).position);
+            if(debug(x, y)) {
+                std::cout << "isect" << (*isect).position << std::endl;
+                std::cout << "shape id" << (*isect).shape_id << std::endl;
+                std::cout << "next_t =====2======" << next_t << std::endl;
+            }
         }
 
         // if(!is_light(scene.shapes[(*isect).shape_id])) {
@@ -295,15 +313,17 @@ Spectrum next_event_estimation(const Scene& scene, Vector3& p, const Ray& ray, c
 
         if(shadow_medium_id != -1) {
             // account for transmittance to next_t
-            
+            Spectrum sigma_t = get_sigma_t(scene, shadow_medium_id);
             T_light *= exp(-sigma_t * next_t);
+            p_trans_dir *= exp(-sigma_t * next_t);
             if(debug(x, y)) {
                 std::cout << "next_t " << next_t << std::endl;
                 std::cout << "sigma_t " << sigma_t << std::endl;
                 std::cout << "exp " << exp(-sigma_t * next_t) << std::endl;
                 std::cout << "T_light " << T_light << std::endl;
+                std::cout << "p_trans_dir" << p_trans_dir << std::endl;
+
             }
-            p_trans_dir *= exp(-sigma_t * next_t);
         }
 
         if(!isect) {
@@ -327,12 +347,13 @@ Spectrum next_event_estimation(const Scene& scene, Vector3& p, const Ray& ray, c
             p = p + next_t * dir_light;
         }
     }
-    //?? need check shadow_medium_exist
-    if (T_light.x > 0) { // still homogeneous
+    //?? need check current_medium_id
+    if (T_light.x > 0 && (current_medium_id != -1)) { // still homogeneous
         Vector3 dir_light = normalize(p_prime.position - p);
         Real G = max(-dot(dir_light, p_prime.normal), Real(0)) /
             distance_squared(p_prime.position, p);
         Spectrum L = emission(light, -dir_light, Real(0), p_prime, scene);
+        PhaseFunction phase_function = get_phase_function(scene.media[current_medium_id]);
         Spectrum f = eval(phase_function, -ray.dir, dir_light);
         Real pdf_nee = light_pmf(scene, light_id) * pdf_point_on_light(light, p_prime, p, scene);
         Spectrum contrib = T_light * G * f * L / pdf_nee;
@@ -346,6 +367,7 @@ Spectrum next_event_estimation(const Scene& scene, Vector3& p, const Ray& ray, c
             std::cout << "G " << G << std::endl;
             std::cout << "f " << f << std::endl;
             std::cout << "L " << L << std::endl;
+            std::cout << "pdf_nee " << pdf_nee << std::endl;
         }
         return w * contrib;
     }         
@@ -406,11 +428,22 @@ Spectrum vol_path_tracing_4(const Scene &scene,
                 scatter = true;
                 trans_pdf = exp(-sigma_t * t) * sigma_t;
                 transmittance = exp(-sigma_t * t);
+                if(debug(x,y)) {
+                    std::cout << "ray.org" << ray.org << std::endl;
+                }
                 ray.org = ray.org + t * ray.dir;
+                if(debug(x,y)) {
+                    std::cout << "t" << t << std::endl;
+                    std::cout << "before hit" << ray.org << std::endl;
+                }
             } else {
                 trans_pdf = exp(-sigma_t * t_hit);
                 transmittance = exp(-sigma_t * t_hit);
-                ray.org = ray.org + t_hit * ray.dir;
+                // ray.org = ray.org + t_hit * ray.dir;
+                ray.org = (*vertex_).position;
+                if(debug(x,y)) {
+                    std::cout << "hit surface" << ray.org << std::endl;
+                }
             }
             // ray.org = ray.org + t * ray.dir;
         }
@@ -463,6 +496,9 @@ Spectrum vol_path_tracing_4(const Scene &scene,
                 if(debug(x, y)) {
                     std::cout << (*vertex_).shape_id << "index matching interface" << std::endl;
                 }
+                //!!!!!!!!!!!!update the ray.org after skipping the index-matching medium
+                //! it will affect the next event estimation contribution (the p is not correct)
+                ray.org = (*vertex_).position;
                 continue;
             }
         }
@@ -480,7 +516,7 @@ Spectrum vol_path_tracing_4(const Scene &scene,
             //??? multiple the rsult with the transmittance and sigma_s
             Vector3 p = ray.org; // current position
             nee_p_cache = p; 
-            Spectrum nee = next_event_estimation(scene, p, ray, current_medium_id, rng, bounces, sigma_t, phase_function, multi_trans_pdf, ray_diff, x, y);
+            Spectrum nee = next_event_estimation(scene, p, ray, current_medium_id, rng, bounces, multi_trans_pdf, ray_diff, x, y);
             radiance += current_path_throughput * nee * sigma_s;
             if(debug(x, y)) {
                 std::cout << "radiance in nee" << radiance << std::endl;

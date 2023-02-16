@@ -4,7 +4,8 @@
 #include "vector.h"
 
 bool debug(int x, int y) {
-    return x == 255 && y == 255; // middle
+    return false;
+    // return x == 255 && y == 255; // middle
 }
 
 void debug_print(Real val) {

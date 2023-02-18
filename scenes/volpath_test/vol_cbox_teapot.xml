@@ -3,7 +3,7 @@
 <scene version="0.5.0">
 	<integrator type="volpath">
 		<integer name="maxDepth" value="-1"/>
-		<integer name="version" value="6"/>
+		<integer name="version" value="5"/>
 	</integrator>
 
 	<medium type="homogeneous" id="medium">
@@ -36,7 +36,8 @@
 
 	<bsdf type="roughdielectric" id="teapot">
 		<float name="intIOR" value="1.33"/>
-		<float name="alpha" value="0.01"/>
+		<!-- <float name="alpha" value="0.01"/> -->
+		<float name="alpha" value="0.2"/>
 		<rgb name="specularReflectance" value="1"/>
 		<rgb name="specularTransmittance" value="1"/>
 	</bsdf>
@@ -109,6 +110,6 @@
 		</transform>
 
 		<ref id="teapot"/>
-		<ref name="interior" id="medium"/>
+		<!-- <ref name="interior" id="medium"/> -->
 	</shape>
 </scene>

@@ -33,6 +33,12 @@ If medium2's g is higher, the right-bottom circle looks darker (not obvious chan
 reference: https://graphics.pixar.com/library/ProductionVolumeRendering/paper.pdf
 
 ## Task4
-1. When the light source is small...(I guess the left one is more suitable since its light source is smaller?)
-2. ......????
-3. More physically based...but still too complex and time-consuming even with nowadays hardwares
+1. When the light source is small. The right one is more suitable since its light source is smaller. 
+Also, the "air" is vacumn for the right one, which means the ray has lower chance to scatter and hit the light.(?)
+2. They are alike. For dense volume and diffuse surface, ray will scatter/reflect randomly.
+3. More physically based...but still too complex and time-consuming even with nowadays hardwares.
+
+## Task5
+1. If the ior is higher, the inner sphere will be brighter since more light is refracted inside and vice versa.
+2. If just making the color of the glass blue without any medium inside, the result will look too average (flat) and not so realistic without the scattering
+behaviour inside the volume (????) 

@@ -42,3 +42,11 @@ Also, the "air" is vacumn for the right one, which means the ray has lower chanc
 1. If the ior is higher, the inner sphere will be brighter since more light is refracted inside and vice versa.
 2. If just making the color of the glass blue without any medium inside, the result will look too average (flat) and not so realistic without the scattering
 behaviour inside the volume (????) 
+
+## Task6 
+1. If the volume is too heterogeneous (which means the extinction coefficient sigma_t is not tight to the majorant sigma_m), it would increase the number of 
+rejected interactions (null-collision). To optimize this situation, we can localize the majorant and bound it the extinction coefficient locally.
+reference: https://cs.dartmouth.edu/wjarosz/publications/novak14residual.pdf
+2. Add contribution of the particle emission when hitting a particle. The contribution may be emssion * curreny_path_thoughput.(??)
+3. Without an unbiased solution, it needs to sample a lot of times to converge to a realistic result.
+If want to have something that is biased but faster, it need a dedicated sampler as well as strong computating resources.

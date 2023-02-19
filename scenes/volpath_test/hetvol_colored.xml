@@ -50,6 +50,7 @@
 
 		<sampler type="independent">
 			<integer name="sampleCount" value="64"/>
+			<!-- <integer name="sampleCount" value="8"/> -->
 		</sampler>
 
 		<film type="hdrfilm">

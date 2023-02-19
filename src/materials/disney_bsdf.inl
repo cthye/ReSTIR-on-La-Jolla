@@ -118,7 +118,7 @@ Spectrum eval_op::operator()(const DisneyBSDF &bsdf) const {
     //* ============================== 
     //* calculate f_clearcoat
     //* ==============================
-    Real ior = 1.5;
+    // Real ior = 1.5;
     Real F_clearcoat = R0 + (1 - R0) * pow(1 - abs(h_dot_out), 5);
     Real D_clearcoat = clearcoat_GGX(clearcoat_gloss, to_local(frame, half_vector));
     Real G_clearcoat = smith_masking_gtr4(clearcoat_gloss, to_local(frame, dir_in)) *
@@ -156,17 +156,17 @@ Real pdf_sample_bsdf_op::operator()(const DisneyBSDF &bsdf) const {
     }
     // Homework 1: implement this!
     //* fetch parameters
-    Spectrum base_color = eval(bsdf.base_color, vertex.uv, vertex.uv_screen_size, texture_pool);
+    // Spectrum base_color = eval(bsdf.base_color, vertex.uv, vertex.uv_screen_size, texture_pool);
     Real specular_transmission = eval(bsdf.specular_transmission, vertex.uv, vertex.uv_screen_size, texture_pool);
     Real metallic = eval(bsdf.metallic, vertex.uv, vertex.uv_screen_size, texture_pool);
-    Real subsurface = eval(bsdf.subsurface, vertex.uv, vertex.uv_screen_size, texture_pool);
-    Real specular = eval(bsdf.specular, vertex.uv, vertex.uv_screen_size, texture_pool);
+    // Real subsurface = eval(bsdf.subsurface, vertex.uv, vertex.uv_screen_size, texture_pool);
+    // Real specular = eval(bsdf.specular, vertex.uv, vertex.uv_screen_size, texture_pool);
     Real roughness = eval(bsdf.roughness, vertex.uv, vertex.uv_screen_size, texture_pool);
     roughness = std::clamp(roughness, Real(0.01), Real(1));
-    Real specular_tint = eval(bsdf.specular_tint, vertex.uv, vertex.uv_screen_size, texture_pool);
+    // Real specular_tint = eval(bsdf.specular_tint, vertex.uv, vertex.uv_screen_size, texture_pool);
     Real anisotropic = eval(bsdf.anisotropic, vertex.uv, vertex.uv_screen_size, texture_pool);
-    Real sheen = eval(bsdf.sheen, vertex.uv, vertex.uv_screen_size, texture_pool);
-    Real sheen_tint = eval(bsdf.sheen_tint, vertex.uv, vertex.uv_screen_size, texture_pool);
+    // Real sheen = eval(bsdf.sheen, vertex.uv, vertex.uv_screen_size, texture_pool);
+    // Real sheen_tint = eval(bsdf.sheen_tint, vertex.uv, vertex.uv_screen_size, texture_pool);
     Real clearcoat = eval(bsdf.clearcoat, vertex.uv, vertex.uv_screen_size, texture_pool);
     Real clearcoat_gloss = eval(bsdf.clearcoat_gloss, vertex.uv, vertex.uv_screen_size, texture_pool);
 
@@ -203,7 +203,7 @@ Real pdf_sample_bsdf_op::operator()(const DisneyBSDF &bsdf) const {
     Real h_dot_out = dot(half_vector, dir_out);
     //!
     Real n_dot_in = dot(frame.n, dir_in);
-    Real n_dot_out = dot(frame.n, dir_out);
+    // Real n_dot_out = dot(frame.n, dir_out);
 
     //* ============================== 
     //* calculate pdf_glass
@@ -271,17 +271,17 @@ std::optional<BSDFSampleRecord>
     }
     // Homework 1: implement this!
     //* fetch parameters
-    Spectrum base_color = eval(bsdf.base_color, vertex.uv, vertex.uv_screen_size, texture_pool);
+    // Spectrum base_color = eval(bsdf.base_color, vertex.uv, vertex.uv_screen_size, texture_pool);
     Real specular_transmission = eval(bsdf.specular_transmission, vertex.uv, vertex.uv_screen_size, texture_pool);
     Real metallic = eval(bsdf.metallic, vertex.uv, vertex.uv_screen_size, texture_pool);
-    Real subsurface = eval(bsdf.subsurface, vertex.uv, vertex.uv_screen_size, texture_pool);
-    Real specular = eval(bsdf.specular, vertex.uv, vertex.uv_screen_size, texture_pool);
+    // Real subsurface = eval(bsdf.subsurface, vertex.uv, vertex.uv_screen_size, texture_pool);
+    // Real specular = eval(bsdf.specular, vertex.uv, vertex.uv_screen_size, texture_pool);
     Real roughness = eval(bsdf.roughness, vertex.uv, vertex.uv_screen_size, texture_pool);
     roughness = std::clamp(roughness, Real(0.01), Real(1));
-    Real specular_tint = eval(bsdf.specular_tint, vertex.uv, vertex.uv_screen_size, texture_pool);
+    // Real specular_tint = eval(bsdf.specular_tint, vertex.uv, vertex.uv_screen_size, texture_pool);
     Real anisotropic = eval(bsdf.anisotropic, vertex.uv, vertex.uv_screen_size, texture_pool);
-    Real sheen = eval(bsdf.sheen, vertex.uv, vertex.uv_screen_size, texture_pool);
-    Real sheen_tint = eval(bsdf.sheen_tint, vertex.uv, vertex.uv_screen_size, texture_pool);
+    // Real sheen = eval(bsdf.sheen, vertex.uv, vertex.uv_screen_size, texture_pool);
+    // Real sheen_tint = eval(bsdf.sheen_tint, vertex.uv, vertex.uv_screen_size, texture_pool);
     Real clearcoat = eval(bsdf.clearcoat, vertex.uv, vertex.uv_screen_size, texture_pool);
     Real clearcoat_gloss = eval(bsdf.clearcoat_gloss, vertex.uv, vertex.uv_screen_size, texture_pool);
 

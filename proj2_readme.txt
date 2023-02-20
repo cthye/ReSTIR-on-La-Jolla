@@ -34,7 +34,10 @@ to integrate the equation and the equation13 is exactly the last "light source t
 3. Play with the parameters σs and σa, how do they affect the final image? Why? (we assume monochro- matic volumes, so don’t set the parameters to be different for each channel.)
 - If sigma_s is larger, the result is brighter for more in-scattering; If sigma_a is larger, the result is darker for more absorption.
 4. Change the phase function from isotropic (the default one) to Henyey-Greenstein by uncommenting the phase function specification in the scene scenes/volpath_test/volpath_test2.xml. Play with the parameter g (the valid range is (−1,1)). What does g mean? How does the g parameter change the appearance? Why?
-If g is positve, it shows forward scattering and the result is brighter, else it shows backward scattering and the result is darker. (why?)
+- If g is positve, it shows forward scattering and the result is brighter, else it shows backward scattering and the result is darker. 
+- Reason: when g is positive, and when the cosine of the angle between omega and omega_prime becomes larger (which means the -ray.dir and dir_light are in opposite direction and a larger angle between them),
+the phase_function gives a higher values; if g is negative, when their cosine is smaller (which means the -ray.dir and dir_light are in the some direction and the angle between them is smaller), the phase_function would 
+also gives a higher values. In this way, it shows the property of forward/backward scattering.
 
 ## Task3
 1. Play with the parameters σs, σa of different volumes, and change max_depth, how do they affect the final image? How does increasing/decreasing σs and σa of medium1 and medium2 affect the appearance, respectively? Why? Do different σs and σa values affect how high you should set max_depth? 
@@ -64,7 +67,7 @@ reference: https://graphics.pixar.com/library/ProductionVolumeRendering/paper.pd
 ## Task4
 1. When will next event estimation be more efficient than phase function sampling? In our test scenes, which one is more efficient? Why?
 - When the light source is small. The right one is more suitable since its light source is smaller. 
-- Also, the "air" is vacumn for the right one, which means the ray has lower chance to scatter and hit the light.(?)
+- Also, the "air" is vacumn for the right one, which means the ray has lower chance to scatter and hit the light.
 2. In scenes/volpath_test/volpath_test4_2.xml, we render a scene with an object composed of dense volume. How does it compare to rendering the object directly with a Lambertian material? Why are they alike or different? 
 - They are alike. For dense volume and diffuse surface, ray will scatter/reflect randomly.
 3. Jim Kajiya famously has predicted in 1991 that in 10 years, all rendering will be volume rendering. What do you think that makes him think so? Why hasn’t it happened yet?
@@ -75,8 +78,7 @@ reference: https://graphics.pixar.com/library/ProductionVolumeRendering/paper.pd
 1. Play with the index of refraction parameter of the dielectric interface in scenes/volpath_test/volpath_test5_2.xml. How does that affect appearance? Why? 
 - If the ior is higher, the inner sphere will be brighter since more light is refracted inside and vice versa.
 2. In the scene scenes/volpath_test/vol_cbox_teapot.xml, we model the glass teapot as a transparent glass with blue homogeneous medium inside. What is the difference in terms of appearance between this approach and just making the color of the glass blue without any medium inside?
-- If just making the color of the glass blue without any medium inside, the result will look too average (flat) and not so realistic without the scattering
-behaviour inside the volume (????) 
+- If just making the color of the glass blue without any medium inside (any also without the roughness parameter), the result will look totally transparent. But after adding the volume, we can only see part of the other side (not totally transparent).
 
 ## Task6 
 1. For heterogeneous volumes, what kind of distribution of the volume density makes the null scattering efficient/inefficient? Can you think of a way to improve our current sampling scheme in the inefficient case? 

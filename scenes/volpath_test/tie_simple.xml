@@ -9,9 +9,11 @@
 
 <!-- Camera and Rendering Parameters -->
 
-    <integrator type="path">
+    <integrator type="volpath">
         <integer name="max_depth" value="12"/>
+		<integer name="version" value="6"/>
     </integrator>
+    
     <sensor type="perspective">
         <string name="fov_axis" value="x"/>
         <float name="fov" value="83.974423"/>
@@ -121,7 +123,25 @@
     </shape>
 
 <!-- Shapes -->
+    <medium type="heterogeneous" id="smoke">
+		<string name="method" value="woodcock"/>
 
+		<volume name="density" type="gridvolume">
+			<string name="filename" value="explosion.vol"/>
+		</volume>
+
+		<volume name="albedo" type="gridvolume">
+			<string name="filename" value="albedo.vol"/>
+		</volume>
+		<float name="scale" value="100"/>
+
+		<float name="stepSize" value="0.1"/>
+	</medium>
+    <shape type="obj">
+		<string name="filename" value="tie_simple2.obj"/>
+
+		<ref name="interior" id="smoke"/>
+	</shape>
     <shape type="ply">
         <string name="filename" value="meshes_2/Sphere-Panel.ply"/>
         <boolean name="face_normals" value="true"/>

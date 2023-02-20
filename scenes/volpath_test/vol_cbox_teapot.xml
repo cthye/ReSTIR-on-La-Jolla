@@ -110,6 +110,6 @@
 		</transform>
 
 		<ref id="teapot"/>
-		<!-- <ref name="interior" id="medium"/> -->
+		<ref name="interior" id="medium"/>
 	</shape>
 </scene>

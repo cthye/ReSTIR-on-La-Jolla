@@ -11,20 +11,5 @@ bool debug(int x, int y) {
     // return x == 249 && y == 243;
     // return x == 323 && y == 229;
     // return x == 146 && y == 246;
-}
-
-void debug_print(Real val) {
-    std::cout << val << std::endl;
-}
-
-void debug_print(std::string msg) {
-    std::cout << msg << std::endl;
-}
-
-void debug_print(std::string msg, Real val) {
-    std::cout << msg << ": "<< val << std::endl;
-}
-
-void debug_print(std::string msg, Vector3 val) {
-    std::cout << msg << ": "<< val << std::endl;
+    // return x == 517 && y == 440;
 }

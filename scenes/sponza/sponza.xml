@@ -6,8 +6,12 @@
 -->
 
 <scene version="0.4.0">
-	<integrator type="path">
+	<!-- <integrator type="path">
 		<integer name="maxDepth" value="-1"/>
+	</integrator> -->
+	<integrator type="volpath">
+		<integer name="maxDepth" value="-1"/>
+		<integer name="version" value="5"/>
 	</integrator>
 <!-- 	<integrator type="rayDifferential">
 	</integrator> -->
@@ -138,6 +142,12 @@
 		<ref name="reflectance" id="Map__54_image-image"/>
 	</bsdf>
 
+	<medium type="homogeneous" id="medium">
+		<rgb name="sigmaA" value="0.5 0.5 0.5"/>
+		<rgb name="sigmaS" value="0.0 0.0 0.0"/>
+		<float name="scale" value="0.001"/>
+	</medium>
+
 	<sensor type="perspective">
 		<float name="farClip" value="1000"/>
 		<float name="fov" value="90.4701"/>
@@ -157,7 +167,10 @@
 
 			<rfilter type="gaussian"/>
 		</film>
+		<ref id="medium"/>
 	</sensor>
+
+	
 
 	<shape type="sphere">
 		<point name="center" x="0" y="17" z="0"/>

@@ -3,8 +3,8 @@
 <scene version="0.5.0">
 	<integrator type="volpath">
 		<integer name="maxDepth" value="6"/>
-		<!-- <integer name="version" value="3"/> -->
-		<integer name="version" value="5"/>
+		<integer name="version" value="3"/>
+		<!-- <integer name="version" value="5"/> -->
 	</integrator>
 
 	<medium type="homogeneous" id="medium1">

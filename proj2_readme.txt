@@ -2,7 +2,24 @@
 1. Change the absorption parameters to zero in scenes/volpath_test/volpath_test1.xml. What do you see? Why?
 The result shows its orginal color of the emitted surface because no absorption attenuates the color.
 2. In the homework, we assume the volume being not emissive. If you were tasked to modify the pseudo code above to add volume emission, how would you do it? Briefly describe your approach.
-Using Monte Carlo to integral over the path and add up all the emission from particles.(??)
+Using Monte Carlo to integral over the path and add up all the emission from particles. Multiple the particle_Le with the transmittance and integrate them over the (0 - t_hit).
+#....some code before
+camera_ray = sample_primary(camera, screen_pos, rng)
+isect = intersect(scene, camera_ray)
+u = next(rng) # u \in [0, 1]
+t = -log(1 - u) / sigma_t
+if t < isect.t_hit:
+    trans_pdf = exp(-sigma_t * t) * sigma_t
+    transmittance = exp(-sigma_t * t) * particle_Le
+    p = camera_ray.org + t * camera_ray.dir
+    # change here
+    current_path_throughput *= transmittance / trans_pdf * particle_Le
+else:
+    # hit a surface, account for surface emission
+    trans_pdf = exp(-sigma_t * isect.t_hit)
+    transmittance = exp(-sigma_t * isect.t_hit)
+    p = camera_ray.org + t_hit * camera_ray.dir
+    current_path_throughput *= transmittance / trans_pdf 
 
 ## Task2
 1. In the derivation above, how did we get from p(t) ∝ exp(−σtt) to p(t) = σt exp(σtt)?
@@ -28,7 +45,9 @@ If increase the sigma_a, the overall result becomes even darker because both the
 - For medium2: If increase the sigma_s, the right-bottom circle is less transparent since more light scatter out and less light goes through it.
 If increase the sigma_a, the right-bottom circle is darker since it absorbs more light.
 - If max_depth is higher, the overall result looks brighter
-- Different sigma_s and sigma_a should not affect the max_depth...(?)
+- Different sigma_s and sigma_a should not affect the max_depth...they are two semantically different paramters (their meanings are different).
+But assume that we want to get the similar result for different sigma_s/sigma_s/max_depth, if we increase the sigma_s, more rays would be scattered out and need more bounces (increase the max_depth) 
+and hit the light. Also, if we increase the sigma_a, the transmittance is larger and we also need to increase the max_depth.
 2. Switch to the Henyey-Greenstein phase function again. How does changing the g parameter affect the appearance? Why? 
 - It stills change the proportion of backward/forward-scattering. 
 - If medium1's g is higher, the overall result looks brighter and versus darker
@@ -65,7 +84,7 @@ behaviour inside the volume (????)
 rejected interactions (null-collision). To optimize this situation, we can localize the majorant and bound it the extinction coefficient locally.
 reference: https://cs.dartmouth.edu/wjarosz/publications/novak14residual.pdf
 2. How do we make the null-scattering work for emissive volumes? Briefly describe a solution. 
-- Add contribution of the particle emission when hitting a particle. The contribution may be emssion * curreny_path_thoughput.(??)
+- Add contribution of the particle emission when hitting a real particle. The contribution may be emssion * curreny_path_thoughput.
 3. Why is it important to have an unbiased solution for volume rendering? Would it be sensible to have something that is biased but faster? How would you do it?
 - Without an unbiased solution, it needs to sample a lot of times to converge to a realistic result.
 - If want to have something that is biased but faster, it need a dedicated sampler as well as strong computating resources.

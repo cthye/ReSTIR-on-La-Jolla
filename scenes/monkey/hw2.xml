@@ -3,14 +3,24 @@
 <!-- Defaults, these can be set via the command line: -Darg=value -->
 
 	<default name="spp" value="4096"/>
-	<default name="resx" value="1920"/>
-	<default name="resy" value="1080"/>
+	<!-- <default name="spp" value="128"/> -->
+	<default name="resx" value="960"/>
+	<default name="resy" value="540"/>
 
 <!-- Camera and Rendering Parameters -->
 
-	<integrator type="path">
+	<!-- <integrator type="path">
 		<integer name="max_depth" value="12"/>
+	</integrator> -->
+    <integrator type="volpath">
+		<integer name="maxDepth" value="12"/>
+		<integer name="version" value="6"/>
 	</integrator>
+    <medium type="homogeneous" id="medium">
+		<rgb name="sigmaA" value="1 1 1"/>
+		<rgb name="sigmaS" value="5 5 5"/>
+		<float name="scale" value="0.02"/>
+	</medium>
 	<sensor type="perspective">
 		<string name="fov_axis" value="x"/>
 		<float name="fov" value="52.133748"/>
@@ -31,6 +41,7 @@
 			<integer name="width" value="$resx"/>
 			<integer name="height" value="$resy"/>
 		</film>
+		<ref id="medium"/>
 	</sensor>
 
 <!-- Materials -->
@@ -78,27 +89,12 @@
 			<float name="specular" value="0.290909"/>
 		</bsdf>
 	</bsdf>
-	<bsdf type="twosided" id="mat-fog">
-		<bsdf type="principled">
-			<rgb value="0.800000 0.800000 0.800000" name="base_color"/>
-			<float name="spec_tint" value="0.000000"/>
-			<float name="spec_trans" value="0.000000"/>
-			<float name="metallic" value="0.000000"/>
-			<float name="anisotropic" value="0.000000"/>
-			<float name="roughness" value="0.500000"/>
-			<float name="sheen" value="0.000000"/>
-			<float name="sheen_tint" value="0.500000"/>
-			<float name="clearcoat" value="0.000000"/>
-			<float name="clearcoat_gloss" value="0.173205"/>
-			<float name="specular" value="0.500000"/>
-		</bsdf>
-	</bsdf>
 
 <!-- Emitters -->
 
-	<emitter type="constant">
+	<!-- <emitter type="constant">
 		<rgb value="0.050000 0.050000 0.050000" name="radiance"/>
-	</emitter>
+	</emitter> -->
 	<shape type="rectangle">
 		<boolean name="flip_normals" value="true"/>
 		<transform name="to_world">
@@ -108,6 +104,7 @@
 			<rgb value="6.870389 5.286329 0.232719" name="radiance"/>
 		</emitter>
 		<bsdf type="null"/>
+		<ref name="exterior" id="medium"/>
 	</shape>
 
 <!-- Shapes -->
@@ -116,20 +113,18 @@
 		<string name="filename" value="meshes/Cube.ply"/>
 		<boolean name="face_normals" value="true"/>
 		<ref id="mat-Material.001" name="bsdf"/>
+		<ref name="exterior" id="medium"/>
 	</shape>
 	<shape type="ply">
 		<string name="filename" value="meshes/Suzanne.ply"/>
 		<boolean name="face_normals" value="true"/>
 		<ref id="mat-Material" name="bsdf"/>
+		<ref name="exterior" id="medium"/>
 	</shape>
 	<shape type="ply">
-		<string name="filename" value="meshes/table.ply"/>
+		<string name="filename" value="meshes/Cube_001.ply"/>
 		<boolean name="face_normals" value="true"/>
 		<ref id="mat-Material.003" name="bsdf"/>
-	</shape>
-	<shape type="ply">
-		<string name="filename" value="meshes/fog.ply"/>
-		<boolean name="face_normals" value="true"/>
-		<ref id="mat-fog" name="bsdf"/>
+		<ref name="exterior" id="medium"/>
 	</shape>
 </scene>

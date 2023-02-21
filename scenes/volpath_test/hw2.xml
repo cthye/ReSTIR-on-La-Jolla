@@ -1,0 +1,83 @@
+<scene version="2.1.0">
+
+<!-- Defaults, these can be set via the command line: -Darg=value -->
+
+	<!-- <default name="spp" value="4096"/> -->
+	<default name="spp" value="128"/>
+	<default name="resx" value="1920"/>
+	<default name="resy" value="1080"/>
+
+<!-- Camera and Rendering Parameters -->
+
+	<!-- <integrator type="path">
+		<integer name="max_depth" value="12"/>
+	</integrator> -->
+	<integrator type="volpath">
+		<integer name="maxDepth" value="-1"/>
+		<integer name="version" value="6"/>
+	</integrator>
+	<medium type="heterogeneous" id="fire">
+		<string name="method" value="woodcock"/>
+
+		<volume name="density" type="gridvolume">
+			<string name="filename" value="fluid_data_0012.vol"/>
+		</volume>
+
+		<volume name="albedo" type="gridvolume">
+			<string name="filename" value="albedo.vol"/>
+		</volume>
+		<!-- <float name="scale" value="100"/> -->
+
+		<float name="stepSize" value="0.1"/>
+	</medium>
+	<sensor type="perspective">
+		<string name="fov_axis" value="x"/>
+		<float name="fov" value="16.194768"/>
+		<float name="principal_point_offset_x" value="0.000000"/>
+		<float name="principal_point_offset_y" value="-0.000000"/>
+		<float name="near_clip" value="0.100000"/>
+		<float name="far_clip" value="100.000000"/>
+		<transform name="to_world">
+			<rotate x="1" angle="-163.7096896497741"/>
+			<rotate y="1" angle="0.7403767112169266"/>
+			<rotate z="1" angle="-179.5893193945418"/>
+			<translate value="-0.467717 5.215775 19.601379"/>
+		</transform>
+		<sampler type="independent">
+			<integer name="sample_count" value="$spp"/>
+		</sampler>
+		<film type="hdrfilm">
+			<integer name="width" value="$resx"/>
+			<integer name="height" value="$resy"/>
+		</film>
+	</sensor>
+
+<!-- Materials -->
+
+	<bsdf type="diffuse" id="mat-Material.001">
+		<rgb value="1.000000 0.000000 0.300000" name="reflectance"/>
+	</bsdf>
+	<bsdf type="twosided" id="default-bsdf">
+		<bsdf type="diffuse"/>
+	</bsdf>
+
+<!-- Emitters -->
+
+	<emitter type="point">
+		<point name="position" x="1.010814905166626" y="-0.31948208808898926" z="-3.2609469890594482"/>
+		<rgb value="79.577469 79.577469 79.577469" name="intensity"/>
+	</emitter>
+
+<!-- Shapes -->
+
+	<shape type="ply">
+		<string name="filename" value="meshes/Suzanne.ply"/>
+		<boolean name="face_normals" value="true"/>
+		<ref id="mat-Material.001" name="bsdf"/>
+	</shape>
+	<shape type="ply">
+		<string name="filename" value="meshes/bound.ply"/>
+		<boolean name="face_normals" value="true"/>
+		<ref id="default-bsdf" name="bsdf"/>
+	</shape>
+</scene>

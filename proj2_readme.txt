@@ -90,3 +90,7 @@ reference: https://cs.dartmouth.edu/wjarosz/publications/novak14residual.pdf
 3. Why is it important to have an unbiased solution for volume rendering? Would it be sensible to have something that is biased but faster? How would you do it?
 - Without an unbiased solution, it needs to sample a lot of times to converge to a realistic result.
 - If want to have something that is biased but faster, it need a dedicated sampler as well as strong computating resources.
+
+## Extra
+I've done the foggy scene in blender, please see the scene/monkey/hw2.xml for the scene file.
+(tho mostly based on one from the last proj1 :)

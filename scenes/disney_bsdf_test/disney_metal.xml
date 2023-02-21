@@ -13,6 +13,11 @@
 			<translate z="0.01"/>
 		</transform>
 
+		<!-- <bsdf type="roughplastic">
+			<rgb name="diffuseReflectance" value="0.0 0.0 0.0"/>
+			<float name="roughness" value="0.5"/>
+		</bsdf> -->
+
 		<bsdf type="disneymetal">
 			<rgb name="baseColor" value="0.82 0.67 0.16"/>
 			<float name="roughness" value="0.2"/>

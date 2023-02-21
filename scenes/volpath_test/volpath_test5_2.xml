@@ -20,6 +20,8 @@
 
 		<bsdf type="roughdielectric">
 			<float name="intIOR" value="1.33"/>
+			<!-- <float name="intIOR" value="1.01"/> -->
+			<!-- <float name="intIOR" value="1.7"/> -->
 			<!-- <float name="roughness" value="0.316"/> -->
 			<float name="alpha" value="0.1"/>
 		</bsdf>

@@ -223,6 +223,7 @@ Spectrum path_tracing(const Scene &scene,
         }
         const BSDFSampleRecord &bsdf_sample = *bsdf_sample_;
         Vector3 dir_bsdf = bsdf_sample.dir_out;
+        assert(dir_bsdf.x == dir_bsdf.x);
         // Update ray differentials & eta_scale
         if (bsdf_sample.eta == 0) {
             ray_diff.spread = reflect(ray_diff, vertex.mean_curvature, bsdf_sample.roughness);
@@ -320,6 +321,11 @@ Spectrum path_tracing(const Scene &scene,
         ray = bsdf_ray;
         vertex = *bsdf_vertex;
         current_path_throughput = current_path_throughput * (G * f) / (p2 * rr_prob);
+        // if(current_path_throughput.x > 1 && current_path_throughput.y > 1 && current_path_throughput.z > 1) {
+        //         std::cout << p2 << ' ' << f << ' ' << current_path_throughput << std::endl;
+        // }
     }
+
+
     return radiance;
 }

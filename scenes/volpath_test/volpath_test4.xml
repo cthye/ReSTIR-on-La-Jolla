@@ -4,6 +4,7 @@
 	<integrator type="volpath">
 		<integer name="maxDepth" value="6"/>
 		<integer name="version" value="4"/>
+		<!-- <integer name="version" value="5"/> -->
 	</integrator>
 
 	<medium type="homogeneous" id="medium1">

@@ -53,13 +53,13 @@
 		</transform>
 
 		<sampler type="independent">
-			<integer name="sampleCount" value="32"/>
+			<!-- <integer name="sampleCount" value="32"/> -->
+			<integer name="sampleCount" value="128"/>
 		</sampler>
 
 		<film type="hdrfilm">
 			<integer name="height" value="576"/>
 			<integer name="width" value="768"/>
-
 			<rfilter type="gaussian"/>
 		</film>
 	</sensor>

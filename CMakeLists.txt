@@ -88,6 +88,7 @@ set(SRCS src/3rdparty/miniz.h
          src/texture.h
          src/transform.h
          src/vector.h
+         src/reservoir.h
          src/parsers/load_serialized.cpp
          src/parsers/parse_obj.cpp
          src/parsers/parse_ply.cpp

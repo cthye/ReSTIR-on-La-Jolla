@@ -16,5 +16,5 @@ inline bool debug(int x, int y) {
 }
 
 inline bool ignore_first_bounce() {
-    return true;
+    return false;
 }

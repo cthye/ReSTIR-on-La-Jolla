@@ -7,7 +7,6 @@
 Spectrum restir_path_tracing(const Scene &scene,
                       int x, int y, /* pixel coordinates */
                       pcg32_state &rng, 
-                      pcg32_state &first_bounce_rng, 
                       Reservoir& rsv, 
                       bool reuse,
                       const std::vector<Reservoir> &reservoirs) {
@@ -135,9 +134,12 @@ Spectrum restir_path_tracing(const Scene &scene,
                 for (int i = 0; i < scene.options.ris_samples; i++) {
                     // First, we sample a point on the light source.
                     // We do this by first picking a light source, then pick a point on it.
-                    Vector2 light_uv{next_pcg32_real<Real>(first_bounce_rng), next_pcg32_real<Real>(first_bounce_rng)};
-                    Real light_w = next_pcg32_real<Real>(first_bounce_rng);
-                    Real shape_w = next_pcg32_real<Real>(first_bounce_rng);
+                    // Vector2 light_uv{next_pcg32_real<Real>(first_bounce_rng), next_pcg32_real<Real>(first_bounce_rng)};
+                    // Real light_w = next_pcg32_real<Real>(first_bounce_rng);
+                    // Real shape_w = next_pcg32_real<Real>(first_bounce_rng);
+                    Vector2 light_uv{next_pcg32_real<Real>(rng), next_pcg32_real<Real>(rng)};
+                    Real light_w = next_pcg32_real<Real>(rng);
+                    Real shape_w = next_pcg32_real<Real>(rng);
                     if(debug(x,y)) {
                         std::cout << "light uv " << light_uv << std::endl;
                         std::cout << "light w " << light_w << std::endl;
@@ -169,7 +171,8 @@ Spectrum restir_path_tracing(const Scene &scene,
 
                     assert(source_pdf > 0);
                     Real w = target_pdf / source_pdf;
-                    Real reservior_r = next_pcg32_real<Real>(first_bounce_rng);
+                    // Real reservior_r = next_pcg32_real<Real>(first_bounce_rng);
+                    Real reservior_r = next_pcg32_real<Real>(rng);
                     if(debug(x,y))
                         std::cout << "rr " << reservior_r << std::endl;
                     update_reservoir(rsv, light_id, point_on_light, w, reservior_r);
@@ -194,7 +197,7 @@ Spectrum restir_path_tracing(const Scene &scene,
 
                     // pˆq(r .y) · r .W · r .M
                     Real w = target_pdf * reservoirs[r].W * reservoirs[r].M;
-                    update_reservoir(new_reservoir, reservoirs[r].light_id, reservoirs[r].y, w, next_pcg32_real<Real>(first_bounce_rng));
+                    update_reservoir(new_reservoir, reservoirs[r].light_id, reservoirs[r].y, w, next_pcg32_real<Real>(rng));
                 }
                 new_reservoir.M = 0;
                 for(int r = 0; r < size(reservoirs); r++) {

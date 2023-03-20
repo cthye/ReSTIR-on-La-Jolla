@@ -7,8 +7,7 @@
 /// Unidirectional path tracing
 Spectrum path_tracing(const Scene &scene,
                       int x, int y, /* pixel coordinates */
-                      pcg32_state &rng,
-                      pcg32_state &first_bounce_rng
+                      pcg32_state &rng
                       ) {
     
     int w = scene.camera.width, h = scene.camera.height;
@@ -109,31 +108,10 @@ Spectrum path_tracing(const Scene &scene,
 
         // First, we sample a point on the light source.
         // We do this by first picking a light source, then pick a point on it.
-        Vector2 light_uv;
-        Real light_w;
-        Real shape_w;
-        Real tmp;
-
-        if(!first_bounce) {
-            light_uv = Vector2{next_pcg32_real<Real>(rng), next_pcg32_real<Real>(rng)};
-            light_w = next_pcg32_real<Real>(rng);
-            shape_w = next_pcg32_real<Real>(rng);
-        } else {
-            for (int random_num = 0; random_num < 32; random_num++) {
-                light_uv = Vector2{next_pcg32_real<Real>(first_bounce_rng), next_pcg32_real<Real>(first_bounce_rng)};
-                light_w = next_pcg32_real<Real>(first_bounce_rng);
-                shape_w = next_pcg32_real<Real>(first_bounce_rng);
-                tmp = next_pcg32_real<Real>(first_bounce_rng);
-                if(debug(x,y)) {
-                    std::cout << "firstbouncerng" << std::endl;
-                    std::cout << "light uv " << light_uv << std::endl;
-                    std::cout << "light w " << light_w << std::endl;
-                    std::cout << "shape w " << shape_w << std::endl;
-                    std::cout << "rr " << shape_w << std::endl;
-                }
-            }
-           
-        }
+        Vector2 light_uv{next_pcg32_real<Real>(rng), next_pcg32_real<Real>(rng)};
+        Real light_w = next_pcg32_real<Real>(rng);
+        Real shape_w = next_pcg32_real<Real>(rng);
+       
         if(debug(x,y)) {
             std::cout << "light uv " << light_uv << std::endl;
             std::cout << "light w " << light_w << std::endl;

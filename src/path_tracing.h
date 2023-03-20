@@ -2,14 +2,27 @@
 
 #include "scene.h"
 #include "pcg.h"
+#include "debug.h"
 
 /// Unidirectional path tracing
 Spectrum path_tracing(const Scene &scene,
                       int x, int y, /* pixel coordinates */
-                      pcg32_state &rng) {
+                      pcg32_state &rng,
+                      pcg32_state &first_bounce_rng
+                      ) {
+    
     int w = scene.camera.width, h = scene.camera.height;
-    Vector2 screen_pos((x + next_pcg32_real<Real>(rng)) / w,
-                       (y + next_pcg32_real<Real>(rng)) / h);
+    Real x_r = next_pcg32_real<Real>(rng);
+    Real y_r = next_pcg32_real<Real>(rng);
+
+    Vector2 screen_pos((x + x_r) / w,
+                       (y + y_r) / h);
+
+    if(debug(x,y)) {
+        std::cout << "=========== new round ==============" << std::endl;
+        std::cout << "x r" << x_r << std::endl;
+        std::cout << "y r" << y_r << std::endl;
+    }
     Ray ray = sample_primary(scene.camera, screen_pos);
     RayDifferential ray_diff = init_ray_differential(w, h);
 
@@ -63,6 +76,7 @@ Spectrum path_tracing(const Scene &scene,
     // We iteratively sum up path contributions from paths with different number of vertices
     // If max_depth == -1, we rely on Russian roulette for path termination.
     int max_depth = scene.options.max_depth;
+    bool first_bounce = true;
     for (int num_vertices = 3; max_depth == -1 || num_vertices <= max_depth + 1; num_vertices++) {
         // We are at v_i, and all the path contribution on and before has been accounted for.
         // Now we need to somehow generate v_{i+1} to account for paths with more vertices.
@@ -95,13 +109,47 @@ Spectrum path_tracing(const Scene &scene,
 
         // First, we sample a point on the light source.
         // We do this by first picking a light source, then pick a point on it.
-        Vector2 light_uv{next_pcg32_real<Real>(rng), next_pcg32_real<Real>(rng)};
-        Real light_w = next_pcg32_real<Real>(rng);
-        Real shape_w = next_pcg32_real<Real>(rng);
+        Vector2 light_uv;
+        Real light_w;
+        Real shape_w;
+        Real tmp;
+
+        if(!first_bounce) {
+            light_uv = Vector2{next_pcg32_real<Real>(rng), next_pcg32_real<Real>(rng)};
+            light_w = next_pcg32_real<Real>(rng);
+            shape_w = next_pcg32_real<Real>(rng);
+        } else {
+            for (int random_num = 0; random_num < 32; random_num++) {
+                light_uv = Vector2{next_pcg32_real<Real>(first_bounce_rng), next_pcg32_real<Real>(first_bounce_rng)};
+                light_w = next_pcg32_real<Real>(first_bounce_rng);
+                shape_w = next_pcg32_real<Real>(first_bounce_rng);
+                tmp = next_pcg32_real<Real>(first_bounce_rng);
+                if(debug(x,y)) {
+                    std::cout << "firstbouncerng" << std::endl;
+                    std::cout << "light uv " << light_uv << std::endl;
+                    std::cout << "light w " << light_w << std::endl;
+                    std::cout << "shape w " << shape_w << std::endl;
+                    std::cout << "rr " << shape_w << std::endl;
+                }
+            }
+           
+        }
+        if(debug(x,y)) {
+            std::cout << "light uv " << light_uv << std::endl;
+            std::cout << "light w " << light_w << std::endl;
+            std::cout << "shape w " << shape_w << std::endl;
+        }
         int light_id = sample_light(scene, light_w);
         const Light &light = scene.lights[light_id];
         PointAndNormal point_on_light =
             sample_point_on_light(light, vertex.position, light_uv, shape_w, scene);
+
+        if(debug(x, y)) {
+            std::cout << "bounce " << num_vertices << std::endl;
+            std::cout << "select light " << light_id << " in total " << size(scene.lights) << " lights " << std::endl;
+            std::cout << "light position" << point_on_light.position << std::endl;
+            std::cout << "ref vertex" << vertex.position << std::endl; 
+        }
 
         // Next, we compute w1*C1/p1. We store C1/p1 in C1.
         Spectrum C1 = make_zero_spectrum();
@@ -156,6 +204,10 @@ Spectrum path_tracing(const Scene &scene,
             Real p1 = light_pmf(scene, light_id) *
                 pdf_point_on_light(light, point_on_light, vertex.position, scene);
 
+            if(debug(x, y)) {
+                    std::cout << "G: " << G << std::endl;
+                    std::cout << "p1: " << p1 << std::endl;
+            }
             // We don't need to continue the computation if G is 0.
             // Also sometimes there can be some numerical issue such that we generate
             // a light path with probability zero
@@ -175,6 +227,12 @@ Spectrum path_tracing(const Scene &scene,
 
                 // C1 is just a product of all of them!
                 C1 = G * f * L;
+                if(debug(x, y)) {
+                    std::cout << "C1: " << C1 << std::endl;
+                    std::cout << "f: " << f << std::endl;
+                    std::cout << "L: " << L << std::endl;
+
+                }
             
                 // Next let's compute w1
 
@@ -202,9 +260,25 @@ Spectrum path_tracing(const Scene &scene,
 
                 w1 = (p1*p1) / (p1*p1 + p2*p2);
                 C1 /= p1;
+                if(debug(x, y)) {
+                    std::cout << "C1: " << C1 << std::endl;
+                }
             }
         }
-        radiance += current_path_throughput * C1 * w1;
+        if (first_bounce && ignore_first_bounce()) {
+            radiance += make_const_spectrum(0);
+            if(debug(x, y))
+                std::cout << "first bounce radiance" << radiance << std::endl;
+        } else {
+            radiance += current_path_throughput * C1 * w1;
+            if(debug(x, y)) {
+                std::cout << "other bounce: " << num_vertices << " cpt " << current_path_throughput << std::endl;
+                std::cout << "other bounce: " << num_vertices << " C1 " << C1 << std::endl;
+                std::cout << "other bounce: " << num_vertices << " w1 " << w1 << std::endl;
+                std::cout << "other bounce: " << num_vertices << " radiance " << radiance << std::endl;
+            }
+        }
+        first_bounce = false;
 
         // Let's do the hemispherical sampling next.
         Vector3 dir_view = -ray.dir;
@@ -237,6 +311,16 @@ Spectrum path_tracing(const Scene &scene,
         Ray bsdf_ray{vertex.position, dir_bsdf, get_intersection_epsilon(scene), infinity<Real>()};
         std::optional<PathVertex> bsdf_vertex = intersect(scene, bsdf_ray);
 
+        if(debug(x, y)) {
+            std::cout << "bsdf_ray dir" << bsdf_ray.dir << std::endl;
+            std::cout << "bsdf_ray org" << bsdf_ray.org << std::endl;
+            std::cout << "sample vertex " << vertex.position << std::endl;
+            std::cout << "sample dir_view " << dir_view << std::endl;
+            std::cout << "sample uv " << bsdf_rnd_param_uv << std::endl;
+            std::cout << "sample w " << bsdf_rnd_param_w << std::endl;
+            std::cout << "bsdf vertex " << (*bsdf_vertex).position << std::endl;
+
+        }
         // To update current_path_throughput
         // we need to multiply G(v_{i}, v_{i+1}) * f(v_{i-1}, v_{i}, v_{i+1}) to it
         // and divide it with the pdf for getting v_{i+1} using hemisphere sampling.

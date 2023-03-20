@@ -81,6 +81,8 @@ Image3 path_render(const Scene &scene) {
     parallel_for([&](const Vector2i &tile) {
         // Use a different rng stream for each thread.
         pcg32_state rng = init_pcg32(tile[1] * num_tiles_x + tile[0]);
+        pcg32_state first_rng = init_pcg32(tile[1] * num_tiles_x + tile[0]);
+
         int x0 = tile[0] * tile_size;
         int x1 = min(x0 + tile_size, w);
         int y0 = tile[1] * tile_size;
@@ -90,7 +92,7 @@ Image3 path_render(const Scene &scene) {
                 Spectrum radiance = make_zero_spectrum();
                 int spp = scene.options.samples_per_pixel;
                 for (int s = 0; s < spp; s++) {
-                    radiance += path_tracing(scene, x, y, rng);
+                    radiance += path_tracing(scene, x, y, rng, first_rng);
                 }
                 img(x, y) = radiance / Real(spp);
             }
@@ -114,12 +116,26 @@ Image3 restir_path_render(const Scene &scene) {
     int num_tiles_x = (w + tile_size - 1) / tile_size;
     int num_tiles_y = (h + tile_size - 1) / tile_size;
 
+    //* want to reuse the random number seed per tile
+    std::vector<std::vector<pcg32_state> > rngs(num_tiles_x);
+    std::vector<std::vector<pcg32_state> > first_rngs(num_tiles_x);
+    for (int rng_i = 0; rng_i < num_tiles_x; rng_i++) {
+        rngs[rng_i] = std::vector<pcg32_state>(num_tiles_y);
+        first_rngs[rng_i] = std::vector<pcg32_state>(num_tiles_y);
+
+        for (int rng_j = 0; rng_j < num_tiles_y; rng_j++) {
+            rngs[rng_i][rng_j] = init_pcg32(rng_j * num_tiles_x + rng_i);
+            first_rngs[rng_i][rng_j] = init_pcg32(rng_j * num_tiles_x + rng_i);
+        }
+    }
     int spp = scene.options.samples_per_pixel;    
     ProgressReporter reporter(spp);
     for (int s = 0; s < spp; s++) {
         parallel_for([&](const Vector2i &tile) {
             // Use a different rng stream for each thread.
             pcg32_state rng = init_pcg32(tile[1] * num_tiles_x + tile[0]);
+            pcg32_state first_rng = init_pcg32(tile[1] * num_tiles_x + tile[0]);
+
             int x0 = tile[0] * tile_size;
             int x1 = min(x0 + tile_size, w);
             int y0 = tile[1] * tile_size;
@@ -141,7 +157,12 @@ Image3 restir_path_render(const Scene &scene) {
                         }
                     }
                     reservoirs.push_back(imgReservoir(x, y));
-                    Spectrum radiance = restir_path_tracing(scene, x, y, rng, rsv, !(s == 0), reservoirs);
+                    // bool reuse = !(s==0);
+                    bool reuse = false;
+
+                    // Spectrum radiance = restir_path_tracing(scene, x, y, rngs[tile[0]][tile[1]], first_rngs[tile[0]][tile[1]], rsv, reuse, reservoirs);
+                    Spectrum radiance = restir_path_tracing(scene, x, y, rng, first_rng, rsv, reuse, reservoirs);
+
                     // std::cout << "radiance " << radiance << std::endl;
                     img(x, y) += radiance / Real(spp);
                     imgReservoir(x, y) = rsv;

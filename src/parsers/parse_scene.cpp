@@ -593,7 +593,10 @@ RenderOptions parse_integrator(pugi::xml_node node,
             } else if (name == "risSamples" || name == "ris_samples") {
                 options.ris_samples = parse_integer(
                     child.attribute("value").value(), default_map);
-            } 
+            } else if (name == "unbiased") {
+                options.unbiased = parse_integer(
+                    child.attribute("value").value(), default_map);
+            }
         }
     } else {
         Error(std::string("Unsupported integrator: ") + type);

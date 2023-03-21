@@ -10,28 +10,53 @@ struct Reservoir {
     PointAndNormal y;
     int light_id;
     PathVertex ref_vertex;
+    Vector3 prev_dir_view;
 };
 
 inline Reservoir init_reservoir() {
     Reservoir r;
     r.M = 0;
     r.w_sum = 0;
+    r.W = 0;
     r.y = PointAndNormal{
         Vector3{0, 0, 0},
         Vector3{0, 0, 1},
     };
     r.light_id = 0;
+    r.prev_dir_view = Vector3{0, 0, 0};
+    r.ref_vertex = PathVertex{};
     return r;
 }
 
-inline void update_reservoir(Reservoir &rsv, int light_id, PointAndNormal x, Real w, const Real &pdf_w) {
+inline bool update_reservoir(Reservoir &rsv, int light_id, PointAndNormal x, Real w, const Real &pdf_w) {
     rsv.w_sum += w;
     rsv.M += 1;
     if (rsv.w_sum == 0) {
-        return;
+        return false;
     }
     if (pdf_w < (w / rsv.w_sum)) {
         rsv.y = x;
         rsv.light_id = light_id;
+        return true;
     }
+    return false;
+}
+
+inline bool update_reservoir_debug(Reservoir &rsv, int light_id, PointAndNormal x, Real w, const Real &pdf_w) {
+    rsv.w_sum += w;
+    rsv.M += 1;
+    std::cout << "pdf_w" << pdf_w << std::endl;
+    std::cout << "w / rsv.w_sum" << w / rsv.w_sum << std::endl;
+    std::cout << "rsv.w_sum" << rsv.w_sum << std::endl;
+
+    if (rsv.w_sum == 0) {
+        return false;
+    }
+    if (pdf_w < (w / rsv.w_sum)) {
+        std::cout << "choosen!" << pdf_w << std::endl;
+        rsv.y = x;
+        rsv.light_id = light_id;
+        return true;
+    }
+    return false;
 }

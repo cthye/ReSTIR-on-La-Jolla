@@ -17,11 +17,11 @@ Spectrum path_tracing(const Scene &scene,
     Vector2 screen_pos((x + x_r) / w,
                        (y + y_r) / h);
 
-    if(debug(x,y)) {
-        std::cout << "=========== new round ==============" << std::endl;
-        std::cout << "x r" << x_r << std::endl;
-        std::cout << "y r" << y_r << std::endl;
-    }
+    // if(debug(x,y)) {
+    //     std::cout << "=========== new round ==============" << std::endl;
+    //     std::cout << "x r" << x_r << std::endl;
+    //     std::cout << "y r" << y_r << std::endl;
+    // }
     Ray ray = sample_primary(scene.camera, screen_pos);
     RayDifferential ray_diff = init_ray_differential(w, h);
 
@@ -112,22 +112,22 @@ Spectrum path_tracing(const Scene &scene,
         Real light_w = next_pcg32_real<Real>(rng);
         Real shape_w = next_pcg32_real<Real>(rng);
        
-        if(debug(x,y)) {
-            std::cout << "light uv " << light_uv << std::endl;
-            std::cout << "light w " << light_w << std::endl;
-            std::cout << "shape w " << shape_w << std::endl;
-        }
+        // if(debug(x,y)) {
+        //     std::cout << "light uv " << light_uv << std::endl;
+        //     std::cout << "light w " << light_w << std::endl;
+        //     std::cout << "shape w " << shape_w << std::endl;
+        // }
         int light_id = sample_light(scene, light_w);
         const Light &light = scene.lights[light_id];
         PointAndNormal point_on_light =
             sample_point_on_light(light, vertex.position, light_uv, shape_w, scene);
 
-        if(debug(x, y)) {
-            std::cout << "bounce " << num_vertices << std::endl;
-            std::cout << "select light " << light_id << " in total " << size(scene.lights) << " lights " << std::endl;
-            std::cout << "light position" << point_on_light.position << std::endl;
-            std::cout << "ref vertex" << vertex.position << std::endl; 
-        }
+        // if(debug(x, y)) {
+        //     std::cout << "bounce " << num_vertices << std::endl;
+        //     std::cout << "select light " << light_id << " in total " << size(scene.lights) << " lights " << std::endl;
+        //     std::cout << "light position" << point_on_light.position << std::endl;
+        //     std::cout << "ref vertex" << vertex.position << std::endl; 
+        // }
 
         // Next, we compute w1*C1/p1. We store C1/p1 in C1.
         Spectrum C1 = make_zero_spectrum();
@@ -182,10 +182,10 @@ Spectrum path_tracing(const Scene &scene,
             Real p1 = light_pmf(scene, light_id) *
                 pdf_point_on_light(light, point_on_light, vertex.position, scene);
 
-            if(debug(x, y)) {
-                    std::cout << "G: " << G << std::endl;
-                    std::cout << "p1: " << p1 << std::endl;
-            }
+            // if(debug(x, y)) {
+            //         std::cout << "G: " << G << std::endl;
+            //         std::cout << "p1: " << p1 << std::endl;
+            // }
             // We don't need to continue the computation if G is 0.
             // Also sometimes there can be some numerical issue such that we generate
             // a light path with probability zero
@@ -205,12 +205,12 @@ Spectrum path_tracing(const Scene &scene,
 
                 // C1 is just a product of all of them!
                 C1 = G * f * L;
-                if(debug(x, y)) {
-                    std::cout << "C1: " << C1 << std::endl;
-                    std::cout << "f: " << f << std::endl;
-                    std::cout << "L: " << L << std::endl;
+                // if(debug(x, y)) {
+                //     std::cout << "C1: " << C1 << std::endl;
+                //     std::cout << "f: " << f << std::endl;
+                //     std::cout << "L: " << L << std::endl;
 
-                }
+                // }
             
                 // Next let's compute w1
 
@@ -238,9 +238,9 @@ Spectrum path_tracing(const Scene &scene,
 
                 w1 = (p1*p1) / (p1*p1 + p2*p2);
                 C1 /= p1;
-                if(debug(x, y)) {
-                    std::cout << "C1: " << C1 << std::endl;
-                }
+                // if(debug(x, y)) {
+                //     std::cout << "C1: " << C1 << std::endl;
+                // }
             }
         }
         if (first_bounce && ignore_first_bounce()) {
@@ -250,10 +250,12 @@ Spectrum path_tracing(const Scene &scene,
         } else {
             radiance += current_path_throughput * C1 * w1;
             if(debug(x, y)) {
-                std::cout << "other bounce: " << num_vertices << " cpt " << current_path_throughput << std::endl;
-                std::cout << "other bounce: " << num_vertices << " C1 " << C1 << std::endl;
-                std::cout << "other bounce: " << num_vertices << " w1 " << w1 << std::endl;
-                std::cout << "other bounce: " << num_vertices << " radiance " << radiance << std::endl;
+                std::cout << "bounce: " << num_vertices << std::endl;
+
+                std::cout << " cpt " << current_path_throughput << std::endl;
+                std::cout << " C1 " << C1 << std::endl;
+                std::cout << " w1 " << w1 << std::endl;
+                std::cout << " radiance " << radiance << std::endl;
             }
         }
         first_bounce = false;

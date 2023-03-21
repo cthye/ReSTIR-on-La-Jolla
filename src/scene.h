@@ -30,6 +30,7 @@ struct RenderOptions {
     int vol_path_version = 0;
     int max_null_collisions = 1000;
     int ris_samples = 32;
+    int unbiased = 0;
 };
 
 /// Bounding sphere

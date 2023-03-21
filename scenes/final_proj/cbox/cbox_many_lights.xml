@@ -1,11 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 
 <scene version="0.4.0">
-	<integrator type="restir">
+	<integrator type="path">
 		<integer name="maxDepth" value="-1"/>
-		<integer name="risSamples" value="32"/>
-		<integer name="unbiased" value="1"/>
-
 	</integrator>
 
 	<sensor type="perspective">
@@ -19,7 +16,7 @@
 		<float name="fov" value="39.3077"/>
 
 		<sampler type="ldsampler">
-			<integer name="sampleCount" value="4"/>
+			<integer name="sampleCount" value="3"/>
 		</sampler>
 
 		<film type="hdrfilm">
@@ -51,7 +48,7 @@
 	</bsdf>
 
 	<shape type="obj">
-		<string name="filename" value="meshes/cbox_luminaire.obj"/>
+		<string name="filename" value="meshes/cbox_luminaire_duplicated_0.obj"/>
 		<transform name="toWorld">
 			<translate x="0" y="-0.5" z="0"/>
 		</transform>
@@ -62,6 +59,163 @@
 			<spectrum name="radiance" value="400:0, 500:8, 600:15.6, 700:18.4"/>
 		</emitter>
 	</shape>
+
+	<shape type="obj">
+		<string name="filename" value="meshes/cbox_luminaire_duplicated_1.obj"/>
+		<transform name="toWorld">
+			<translate x="0" y="-0.5" z="0"/>
+		</transform>
+
+		<ref id="light"/>
+
+		<emitter type="area">
+			<spectrum name="radiance" value="400:0, 500:8, 600:15.6, 700:18.4"/>
+		</emitter>
+	</shape>
+
+	<shape type="obj">
+		<string name="filename" value="meshes/cbox_luminaire_duplicated_2.obj"/>
+		<transform name="toWorld">
+			<translate x="0" y="-0.5" z="0"/>
+		</transform>
+
+		<ref id="light"/>
+
+		<emitter type="area">
+			<spectrum name="radiance" value="400:0, 500:8, 600:15.6, 700:18.4"/>
+		</emitter>
+	</shape>
+
+	<shape type="obj">
+		<string name="filename" value="meshes/cbox_luminaire_duplicated_3.obj"/>
+		<transform name="toWorld">
+			<translate x="0" y="-0.5" z="0"/>
+		</transform>
+
+		<ref id="light"/>
+
+		<emitter type="area">
+			<spectrum name="radiance" value="400:0, 500:8, 600:15.6, 700:18.4"/>
+		</emitter>
+	</shape>
+
+	<shape type="obj">
+		<string name="filename" value="meshes/cbox_luminaire_duplicated_4.obj"/>
+		<transform name="toWorld">
+			<translate x="0" y="-0.5" z="0"/>
+		</transform>
+
+		<ref id="light"/>
+
+		<emitter type="area">
+			<spectrum name="radiance" value="400:0, 500:8, 600:15.6, 700:18.4"/>
+		</emitter>
+	</shape>
+
+	<shape type="obj">
+		<string name="filename" value="meshes/cbox_luminaire_duplicated_5.obj"/>
+		<transform name="toWorld">
+			<translate x="0" y="-0.5" z="0"/>
+		</transform>
+
+		<ref id="light"/>
+
+		<emitter type="area">
+			<spectrum name="radiance" value="400:0, 500:8, 600:15.6, 700:18.4"/>
+		</emitter>
+	</shape>
+
+	<shape type="obj">
+		<string name="filename" value="meshes/cbox_luminaire_duplicated_6.obj"/>
+		<transform name="toWorld">
+			<translate x="0" y="-0.5" z="0"/>
+		</transform>
+
+		<ref id="light"/>
+
+		<emitter type="area">
+			<spectrum name="radiance" value="400:0, 500:8, 600:15.6, 700:18.4"/>
+		</emitter>
+	</shape>
+
+	<shape type="obj">
+		<string name="filename" value="meshes/cbox_luminaire_duplicated_7.obj"/>
+		<transform name="toWorld">
+			<translate x="0" y="-0.5" z="0"/>
+		</transform>
+
+		<ref id="light"/>
+
+		<emitter type="area">
+			<spectrum name="radiance" value="400:0, 500:8, 600:15.6, 700:18.4"/>
+		</emitter>
+	</shape>
+
+	<shape type="obj">
+		<string name="filename" value="meshes/cbox_luminaire_duplicated_8.obj"/>
+		<transform name="toWorld">
+			<translate x="0" y="-0.5" z="0"/>
+		</transform>
+
+		<ref id="light"/>
+
+		<emitter type="area">
+			<spectrum name="radiance" value="400:0, 500:8, 600:15.6, 700:18.4"/>
+		</emitter>
+	</shape>
+
+	<shape type="obj">
+		<string name="filename" value="meshes/cbox_luminaire_duplicated_9.obj"/>
+		<transform name="toWorld">
+			<translate x="0" y="-0.5" z="0"/>
+		</transform>
+
+		<ref id="light"/>
+
+		<emitter type="area">
+			<spectrum name="radiance" value="400:0, 500:8, 600:15.6, 700:18.4"/>
+		</emitter>
+	</shape>
+
+	<shape type="obj">
+		<string name="filename" value="meshes/cbox_luminaire_duplicated_10.obj"/>
+		<transform name="toWorld">
+			<translate x="0" y="-0.5" z="0"/>
+		</transform>
+
+		<ref id="light"/>
+
+		<emitter type="area">
+			<spectrum name="radiance" value="400:0, 500:8, 600:15.6, 700:18.4"/>
+		</emitter>
+	</shape>
+
+	<shape type="obj">
+		<string name="filename" value="meshes/cbox_luminaire_duplicated_11.obj"/>
+		<transform name="toWorld">
+			<translate x="0" y="-0.5" z="0"/>
+		</transform>
+
+		<ref id="light"/>
+
+		<emitter type="area">
+			<spectrum name="radiance" value="400:0, 500:8, 600:15.6, 700:18.4"/>
+		</emitter>
+	</shape>
+
+	<shape type="obj">
+		<string name="filename" value="meshes/cbox_luminaire_duplicated_12.obj"/>
+		<transform name="toWorld">
+			<translate x="0" y="-0.5" z="0"/>
+		</transform>
+
+		<ref id="light"/>
+
+		<emitter type="area">
+			<spectrum name="radiance" value="400:0, 500:8, 600:15.6, 700:18.4"/>
+		</emitter>
+	</shape>
+
 
 	<shape type="obj">
 		<string name="filename" value="meshes/cbox_floor.obj"/>

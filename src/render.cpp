@@ -150,7 +150,7 @@ Image3 restir_path_render(const Scene &scene) {
                 for (int x = x0; x < x1; x++) {
                     Reservoir rsv = init_reservoir();
                     std::vector<Reservoir> reservoirs;
-                    reservoirs.push_back(prevImgReservoir(x, y));
+                    // reservoirs.push_back(prevImgReservoir(x, y));
 
                     // std::cout << "x " << x << "y " << y << std::endl;
                     if(s > 0) {

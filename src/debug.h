@@ -21,7 +21,7 @@ inline bool debug(int x, int y) {
     // return x == 264 && y == 333;
     // return x == 330 && y == 99;
     // return x == 149 && y == 443;
-    return x == 118 && y == 465;
+    return x == 348 && y == 182;
 
     // return x == 213 && y == 442;
 

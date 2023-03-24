@@ -14,7 +14,7 @@
 	<integrator type="restir">
 		<integer name="maxDepth" value="-1"/>
 		<integer name="risSamples" value="8"/>
-		<integer name="unbiased" value="1"/>
+		<integer name="unbiased" value="0"/>
 	</integrator>
 	<sensor type="perspective">
 		<string name="fov_axis" value="x"/>

@@ -46,8 +46,12 @@ inline bool update_reservoir(Reservoir &rsv, int light_id, PointAndNormal x, Rea
 }
 
 inline bool update_reservoir_debug(Reservoir &rsv, int light_id, PointAndNormal x, Real w, const Real &pdf_w) {
+    std::cout << "before updating reservoir" << pdf_w << std::endl;
+    std::cout << "w_sum: " << rsv.w_sum << std::endl;
+    std::cout << "adding: " << w << std::endl;
     rsv.w_sum += w;
     rsv.M += 1;
+    std::cout << "updating reservoir ...." << std::endl;
     std::cout << "pdf_w" << pdf_w << std::endl;
     std::cout << "rsv.w_sum" << rsv.w_sum << std::endl;
     std::cout << "rsv.M " << rsv.M << std::endl;

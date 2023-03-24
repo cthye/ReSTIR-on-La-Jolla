@@ -20,8 +20,15 @@ inline bool debug(int x, int y) {
     // return x == 211 && y == 218;
     // return x == 264 && y == 333;
     // return x == 330 && y == 99;
-    // return x == 149 && y == 443;
-    return x == 39 && y == 297;
+    // return x == 96 && y == 425;
+
+    return x == 149 && y == 443;
+    // return x == 122 && y == 466;
+    // return x == 108 && y == 466;
+    // return x == 97 && y == 491;
+    // return x == 90 && y == 509;
+
+
 
     // return x == 213 && y == 442;
 

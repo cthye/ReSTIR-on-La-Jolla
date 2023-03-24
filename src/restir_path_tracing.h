@@ -19,7 +19,12 @@ Real eval_target_pdf(const Scene& scene,
                    int x, int y) {
     Vector3 dir_light = normalize(light_sample.position - vertex.position);
     // assert(neighbour_vertex.material_id != -1);
-    if(vertex.material_id == -1) return 0;
+    if(vertex.material_id == -1) {
+        if(debug(x, y)) {
+            std::cout << "invalid mat" << std::endl;
+        }
+        return 0;
+    }
     const Material &neighbour_mat = scene.materials[vertex.material_id];
 
     Real G = max(-dot(dir_light, light_sample.normal), Real(0)) /
@@ -32,8 +37,7 @@ Real eval_target_pdf(const Scene& scene,
     Real target_pdf = luminance(L * G * f);
 
     if(debug(x, y)) {
-        std::cout << "compare target pdf with 0" << std::endl;
-        std::cout << "target_pdf " << target_pdf << std::endl;
+        std::cout << "evaling target_pdf ..." << target_pdf << std::endl;
         std::cout << "G " << G << std::endl;
         std::cout << "f " << f << std::endl;
         std::cout << "light pos " << light_sample.position << std::endl;
@@ -96,9 +100,9 @@ void regular_ris(const Scene& scene, Reservoir& rsv, pcg32_state& rng, const Pat
         Real target_pdf = eval_target_pdf(scene, vertex, dir_view, point_on_light, light_id, false, x, y);
         
 
-        Real contri_W = 1 / source_pdf;
-        // unbiased_reuse_m = 1.0 / scene.options.ris_samples;
-
+        Real contri_W = 1.0 / source_pdf;
+        assert(source_pdf > 0);
+        // Real unbiased_reuse_m = 1.0 / scene.options.ris_samples;
         // Real w = target_pdf * contri_W * unbiased_reuse_m;
         Real w = target_pdf * contri_W;
 
@@ -133,19 +137,20 @@ Real combine_reservoirs(const Scene &scene,
         //* target_pdf = Le * f * G
         //* luminance turn spectrum into real
         //* pˆq(ri.y)
-        // Vector3 dir_light = normalize(reservoirs[r].y.position - vertex.position);
-        // Real G = max(-dot(dir_light, reservoirs[r].y.normal), Real(0)) /
-        //             distance_squared(reservoirs[r].y.position, vertex.position);
-        // const Light &light = scene.lights[reservoirs[r].light_id];
-        // Spectrum L = emission(light, -dir_light, Real(0), reservoirs[r].y, scene);
-        // Vector3 dir_view = curr_ray;
-        // Spectrum f = eval(scene.materials[vertex.material_id], dir_view, dir_light, vertex, scene.texture_pool);
-        // Real target_pdf = luminance(L * G * f);
-        Real target_pdf = eval_target_pdf(scene, vertex, dir_view, reservoirs[r].y, reservoirs[r].light_id, true, x, y);
+        
+        // if(reservoirs[r].M == 0) {
+        //     continue;
+        // }
 
+        Real target_pdf = eval_target_pdf(scene, vertex, dir_view, reservoirs[r].y, reservoirs[r].light_id, true, x, y);
+        
         //todo: normalized
         //* pˆq(r .y) · r .W · r .M
         Real w = target_pdf * reservoirs[r].W * reservoirs[r].M;
+        
+        // Real m = 1.0 / reservoirs[r].M;
+        // Real w = m * target_pdf * reservoirs[r].W;
+
         if(debug(x, y)) {
             std::cout << "combine reservior " << r << std::endl;
             std::cout << "vertex " << reservoirs[r].ref_vertex.position << std::endl;
@@ -166,6 +171,10 @@ Real combine_reservoirs(const Scene &scene,
         }
 
         new_reservoir_M += reservoirs[r].M;
+    }
+    if(debug(x, y)) {
+        std::cout << "after combining ..." << std::endl;
+        std::cout << "chose sample " << new_reservoir.y.position << std::endl;
     }
     return new_reservoir_M;
 }
@@ -312,8 +321,8 @@ Spectrum restir_path_tracing(const Scene &scene,
             } else {
                 switch(scene.options.unbiased) {
                 case static_cast<int>(Unbiased::NONE): {
-                    // Reservoir current_reservoir = init_reservoir();
                     regular_ris(scene, rsv, rng, vertex, -ray.dir, x, y);
+
 
                     //* reuse with bias(Algorithm (4))
                     Reservoir new_reservoir = init_reservoir();
@@ -321,31 +330,36 @@ Spectrum restir_path_tracing(const Scene &scene,
                     if(debug(x, y)) {
                         std::cout << "reuse reserveroir number " << size(reservoirs) << std::endl;
                     }
-                    Real new_reservoir_M = combine_reservoirs(scene, reservoirs, vertex, rng, -ray.dir, new_reservoir, x, y);
+                    new_reservoir.M = combine_reservoirs(scene, reservoirs, vertex, rng, -ray.dir, new_reservoir, x, y);
                     //todo: if M == 0 w_sum == 0, no selected reservoir, the y would be zero
                     //todo: just give up this DI...jump to bsdf
                     light_id = new_reservoir.light_id;
                     point_on_light = new_reservoir.y;
-                    new_reservoir.M = new_reservoir_M;
                     rsv = new_reservoir; // reuse
                     unbiased_reuse_m = 1.0 / rsv.M;
                     if(debug(x, y)) {
                         std::cout << "rsv.w_sum " << rsv.w_sum << std::endl;
                         std::cout << "rsv.M " << rsv.M << std::endl;
                         std::cout << "rsv.m " << unbiased_reuse_m << std::endl;
+                        for (int r = 0; r < size(reservoirs); r++) {
+                            std::cout << "weight of rsv " << r << ":" << reservoirs[r].M / rsv.M << std::endl;
+                        }
                     }
                     break;
                 }
                 case static_cast<int>(Unbiased::NAIVE): {
                     //* unbias reuse (Algorithm (6))
+                    regular_ris(scene, rsv, rng, vertex, -ray.dir, x, y);
+                    reservoirs.push_back(rsv);
                     Reservoir new_reservoir = init_reservoir();
-                    new_reservoir.prev_dir_view = -ray.dir;
                     new_reservoir.M = combine_reservoirs(scene, reservoirs, vertex, rng, -ray.dir, new_reservoir, x, y);
+                    light_id = new_reservoir.light_id;
+                    point_on_light = new_reservoir.y;
+                    rsv = new_reservoir; // reuse 
                     
-                    if(debug(x,y)) {
-                        std::cout << "after combined" << std::endl;
-                        std::cout << "sample y " << new_reservoir.y.position << std::endl;
-                    }
+                    // light_id = rsv.light_id;
+                    // point_on_light = rsv.y;
+                    // unbiased_reuse_m = 1. / rsv.M;
 
                     //* Z add up all the effective samples number
                     Real Z = 0;
@@ -362,15 +376,18 @@ Spectrum restir_path_tracing(const Scene &scene,
                             }
                         }
                     }
-
-                    light_id = new_reservoir.light_id;
-                    point_on_light = new_reservoir.y;
+                    if(debug(x, y)) {
+                        std::cout << "new ris weight" << std::endl;
+                        for(int r = 0; r < size(reservoirs); r++) {
+                            std::cout << "reservoir " << r << " reservoirs[r].M / Z: " << reservoirs[r].M / Z << std::endl;
+                        }
+                    } 
+                    
                     if (Z > 0) {
                         unbiased_reuse_m = 1. / Z;
                     } else {
                         unbiased_reuse_m = 0;
                     }
-                    rsv = new_reservoir; // reuse 
                     
                     if(debug(x, y)) {
                         std::cout << "rsv.w_sum " << rsv.w_sum << std::endl;
@@ -848,6 +865,7 @@ Spectrum restir_path_tracing(const Scene &scene,
                                 std::cout << "pass " << num_vertices - 3 << std::endl;
                                 std::cout << "w_sum " << rsv.w_sum << std::endl;
                                 std::cout << "m " << unbiased_reuse_m << std::endl;
+                                std::cout << "w_sum * m " << rsv.w_sum * unbiased_reuse_m << std::endl;
                                 std::cout << "target pdf inverse " << 1. / luminance(C1) << std::endl;
                                 std::cout << "W " << rsv.W << std::endl;
                             }

@@ -167,15 +167,15 @@ Image3 restir_path_render(const Scene &scene) {
                             }
                             reservoirs.push_back(prevImgReservoir(neighbour_x, neighbour_y));
                             if(debug(x,y)) {
-                                std::cout << "======segment fault location log======" << std::endl;
+                                std::cout << "======= spp: "<< s << " select reservoir from: " << neighbour_x << ' ' << neighbour_y << " =======" << std::endl;
                             }
                         }
                     }
                     if(debug(x,y) && s) {
                         std::cout << "vector size " << size(reservoirs) << std::endl;
                     }
-                    // bool reuse = !(s==0);
-                    bool reuse = false;
+                    bool reuse = !(s==0);
+                    // bool reuse = false;
                     Reservoir rsv = init_reservoir();
                     if (reuse) {
                         rsv = prevImgReservoir(x , y);

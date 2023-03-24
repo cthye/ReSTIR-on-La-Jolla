@@ -2,20 +2,20 @@
 
 <!-- Defaults, these can be set via the command line: -Darg=value -->
 
-	<default name="spp" value="2"/>
+	<default name="spp" value="1024"/>
 	<default name="resx" value="1920"/>
 	<default name="resy" value="1080"/>
 
 <!-- Camera and Rendering Parameters -->
 
-	<!-- <integrator type="path">
+	<integrator type="path">
 		<integer name="max_depth" value="-1"/>
-	</integrator> -->
-	<integrator type="restir">
+	</integrator>
+	<!-- <integrator type="restir">
 		<integer name="maxDepth" value="-1"/>
 		<integer name="risSamples" value="8"/>
-		<integer name="unbiased" value="0"/>
-	</integrator>
+		<integer name="unbiased" value="1"/>
+	</integrator> -->
 	<sensor type="perspective">
 		<string name="fov_axis" value="x"/>
 		<float name="fov" value="61.927515"/>

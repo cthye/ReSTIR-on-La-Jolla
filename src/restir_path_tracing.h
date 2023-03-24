@@ -321,21 +321,29 @@ Spectrum restir_path_tracing(const Scene &scene,
             } else {
                 switch(scene.options.unbiased) {
                 case static_cast<int>(Unbiased::NONE): {
-                    regular_ris(scene, rsv, rng, vertex, -ray.dir, x, y);
+                    // Reservoir curr_pixel_rsv = init_reservoir();
+                    // // Reservoir curr_pixel_rsv = rsv;
+                    // regular_ris(scene, curr_pixel_rsv, rng, vertex, -ray.dir, x, y);
 
+                    // Real curr_pdf = eval_target_pdf(scene, vertex, -ray.dir, curr_pixel_rsv.y, curr_pixel_rsv.light_id, true, x, y);
+                    // if(curr_pixel_rsv.M == 0 || curr_pdf == 0) {
+                    //     curr_pixel_rsv.W = 0;
+                    // } else {
+                    //     curr_pixel_rsv.W = 1.0 / curr_pdf * curr_pixel_rsv.w_sum / curr_pixel_rsv.M;
+                    // }
+                    // reservoirs.push_back(curr_pixel_rsv);
 
                     //* reuse with bias(Algorithm (4))
                     Reservoir new_reservoir = init_reservoir();
-                    reservoirs.push_back(rsv);
-                    if(debug(x, y)) {
-                        std::cout << "reuse reserveroir number " << size(reservoirs) << std::endl;
-                    }
                     new_reservoir.M = combine_reservoirs(scene, reservoirs, vertex, rng, -ray.dir, new_reservoir, x, y);
-                    //todo: if M == 0 w_sum == 0, no selected reservoir, the y would be zero
-                    //todo: just give up this DI...jump to bsdf
+                    // //todo: if M == 0 w_sum == 0, no selected reservoir, the y would be zero
+                    // //todo: just give up this DI...jump to bsdf
+
+                    // new_reservoir = rsv;
                     light_id = new_reservoir.light_id;
                     point_on_light = new_reservoir.y;
                     rsv = new_reservoir; // reuse
+
                     unbiased_reuse_m = 1.0 / rsv.M;
                     if(debug(x, y)) {
                         std::cout << "rsv.w_sum " << rsv.w_sum << std::endl;
@@ -349,8 +357,18 @@ Spectrum restir_path_tracing(const Scene &scene,
                 }
                 case static_cast<int>(Unbiased::NAIVE): {
                     //* unbias reuse (Algorithm (6))
+                    // Reservoir curr_pixel_rsv = rsv;
+                    Reservoir curr_pixel_rsv = init_reservoir();
+
                     regular_ris(scene, rsv, rng, vertex, -ray.dir, x, y);
-                    reservoirs.push_back(rsv);
+                    Real curr_pdf = eval_target_pdf(scene, vertex, -ray.dir, curr_pixel_rsv.y, curr_pixel_rsv.light_id, true, x, y);
+                    if(curr_pixel_rsv.M == 0 || curr_pdf == 0) {
+                        curr_pixel_rsv.W = 0;
+                    } else {
+                        curr_pixel_rsv.W = 1.0 / curr_pdf * curr_pixel_rsv.w_sum / curr_pixel_rsv.M;
+                    }
+                    reservoirs.push_back(curr_pixel_rsv);
+
                     Reservoir new_reservoir = init_reservoir();
                     new_reservoir.M = combine_reservoirs(scene, reservoirs, vertex, rng, -ray.dir, new_reservoir, x, y);
                     light_id = new_reservoir.light_id;
@@ -398,6 +416,7 @@ Spectrum restir_path_tracing(const Scene &scene,
                 }
                 case static_cast<int>(Unbiased::MIS): {
                     //* unbias reuse mis version (supplement Algorithm (1))
+                    
                     Reservoir new_reservoir = init_reservoir();
                     Real new_reservoir_M = 0;
                     int selected_reservoir_id = 0;
@@ -793,8 +812,7 @@ Spectrum restir_path_tracing(const Scene &scene,
 
                 // C1 is just a product of all of them!
                 C1 = G * f * L;
-                if(debug(x,y) && luminance(C1) < 1e6) {
-                    std::cout << "C1 too small " << C1 << std::endl;
+                if(debug(x,y)) {
                     std::cout << "reuse? " << reuse << std::endl;
                     std::cout << "f: " << f << std::endl;
                     std::cout << "L: " << L << std::endl;

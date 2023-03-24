@@ -10,25 +10,25 @@ enum Unbiased {
     HMIS = 3
 };
 
-Real neighbour_pdf(const Scene& scene,
-                   const Reservoir& reservoir, 
+Real eval_target_pdf(const Scene& scene,
+                   const PathVertex& vertex, 
+                   const Vector3& dir_view,
                    const PointAndNormal light_sample,
                    const int light_id,
+                   bool visibitliy,
                    int x, int y) {
-    PathVertex neighbour_vertex = reservoir.ref_vertex;
-    Vector3 dir_light = normalize(light_sample.position - neighbour_vertex.position);
+    Vector3 dir_light = normalize(light_sample.position - vertex.position);
     // assert(neighbour_vertex.material_id != -1);
-    if(neighbour_vertex.material_id == -1) return 0;
-    const Material &neighbour_mat = scene.materials[neighbour_vertex.material_id];
+    if(vertex.material_id == -1) return 0;
+    const Material &neighbour_mat = scene.materials[vertex.material_id];
 
     Real G = max(-dot(dir_light, light_sample.normal), Real(0)) /
-                distance_squared(light_sample.position, neighbour_vertex.position);
+                distance_squared(light_sample.position, vertex.position);
     const Light &light = scene.lights[light_id];
     Spectrum L = emission(light, -dir_light, Real(0), light_sample, scene);
     // Vector3 dir_view = -ray.dir;
-    Vector3 dir_view = reservoir.prev_dir_view;
     //? need to change dir_view?
-    Spectrum f = eval(neighbour_mat, dir_view, dir_light, neighbour_vertex, scene.texture_pool);
+    Spectrum f = eval(neighbour_mat, dir_view, dir_light, vertex, scene.texture_pool);
     Real target_pdf = luminance(L * G * f);
 
     if(debug(x, y)) {
@@ -37,31 +37,95 @@ Real neighbour_pdf(const Scene& scene,
         std::cout << "G " << G << std::endl;
         std::cout << "f " << f << std::endl;
         std::cout << "light pos " << light_sample.position << std::endl;
-        std::cout << "vertex pos " << neighbour_vertex.position << std::endl;
+        std::cout << "vertex pos " << vertex.position << std::endl;
         std::cout << normalize(dir_view) << std::endl;
-        std::cout << normalize(neighbour_vertex.geometric_normal) << std::endl;
-        std::cout << dot(neighbour_vertex.geometric_normal, dir_view) << std::endl;
-        std::cout << dot(neighbour_vertex.geometric_normal, dir_light) << std::endl;
+        std::cout << normalize(vertex.geometric_normal) << std::endl;
+        std::cout << dot(vertex.geometric_normal, dir_view) << std::endl;
+        std::cout << dot(vertex.geometric_normal, dir_light) << std::endl;
         std::cout << "L " << L << std::endl;
 
     }
     //todo: visibility check
-    Ray shadow_ray{neighbour_vertex.position, dir_light, 
-            get_shadow_epsilon(scene),
-            (1 - get_shadow_epsilon(scene)) *
-                distance(light_sample.position, neighbour_vertex.position)};
+    if(visibitliy) {
+        Ray shadow_ray{vertex.position, dir_light, 
+                get_shadow_epsilon(scene),
+                (1 - get_shadow_epsilon(scene)) *
+                    distance(light_sample.position, vertex.position)};
 
-    if (occluded(scene, shadow_ray)) 
-        return 0.;
+        if (occluded(scene, shadow_ray)) {
+            if(debug(x, y)) {
+                std::cout << "blocked" << std::endl;
+            }
+            return 0.;
+        }
+    }
 
     return target_pdf;
+}
+
+void regular_ris(const Scene& scene, Reservoir& rsv, pcg32_state& rng, const PathVertex& vertex, const Vector3& dir_view, int x, int y) {
+    if(vertex.material_id == -1) return;
+    for (int r = 0; r < scene.options.ris_samples; r++) {
+        // First, we sample a point on the light source.
+        // We do this by first picking a light source, then pick a point on it.
+        Vector2 light_uv{next_pcg32_real<Real>(rng), next_pcg32_real<Real>(rng)};
+        Real light_w = next_pcg32_real<Real>(rng);
+        Real shape_w = next_pcg32_real<Real>(rng);
+        // if(debug(x,y)) {
+        //     std::cout << "light uv " << light_uv << std::endl;
+        //     std::cout << "light w " << light_w << std::endl;
+        //     std::cout << "shape w " << shape_w << std::endl;
+        // }
+        int light_id = sample_light(scene, light_w);
+        const Light &light = scene.lights[light_id];
+        PointAndNormal point_on_light = sample_point_on_light(light, vertex.position, light_uv, shape_w, scene);
+        // if(debug(x, y))
+        //     std::cout << "(loop) light position" << point_on_light.position << std::endl;
+        
+        Real source_pdf = light_pmf(scene, light_id) *
+            pdf_point_on_light(light, point_on_light, vertex.position, scene);
+
+        //* target_pdf = Le * f * G
+        //* luminance turn spectrum into real
+        // Vector3 dir_light = normalize(point_on_light.position - vertex.position);
+        // Real G = max(-dot(dir_light, point_on_light.normal), Real(0)) /
+        //             distance_squared(point_on_light.position, vertex.position);
+        // Spectrum L = emission(light, -dir_light, Real(0), point_on_light, scene);
+        // Spectrum f = eval(scene.materials[vertex.material_id], dir_view, dir_light, vertex, scene.texture_pool);
+        // Real target_pdf = luminance(L * G * f);
+        Real target_pdf = eval_target_pdf(scene, vertex, dir_view, point_on_light, light_id, false, x, y);
+        
+
+        Real contri_W = 1 / source_pdf;
+        // unbiased_reuse_m = 1.0 / scene.options.ris_samples;
+
+        // Real w = target_pdf * contri_W * unbiased_reuse_m;
+        Real w = target_pdf * contri_W;
+
+        assert(w == w);
+        if(debug(x, y)) {
+            std::cout << "in ris: " << r << std::endl;
+            std::cout << "contri_w " << contri_W << " w " << w  << " target pdf " << target_pdf << std::endl;
+        }
+
+        // Real reservior_r = next_pcg32_real<Real>(first_bounce_rng);
+        Real reservior_r = next_pcg32_real<Real>(rng);
+        if(debug(x,y)) {
+            update_reservoir_debug(rsv, light_id, point_on_light, w, reservior_r);
+        } else {
+            update_reservoir(rsv, light_id, point_on_light, w, reservior_r);
+        }
+    }
+    rsv.ref_vertex = vertex;
+    rsv.prev_dir_view = dir_view;
+    return;
 }
 
 Real combine_reservoirs(const Scene &scene, 
                         const std::vector<Reservoir>& reservoirs,
                         const PathVertex& vertex, 
                         pcg32_state &rng,
-                        const Vector3& curr_ray,
+                        const Vector3& dir_view,
                         Reservoir& new_reservoir,
                         int x, int y) {
     Real new_reservoir_M = 0;
@@ -69,29 +133,27 @@ Real combine_reservoirs(const Scene &scene,
         //* target_pdf = Le * f * G
         //* luminance turn spectrum into real
         //* pˆq(ri.y)
-        Vector3 dir_light = normalize(reservoirs[r].y.position - vertex.position);
-        Real G = max(-dot(dir_light, reservoirs[r].y.normal), Real(0)) /
-                    distance_squared(reservoirs[r].y.position, vertex.position);
-        const Light &light = scene.lights[reservoirs[r].light_id];
-        Spectrum L = emission(light, -dir_light, Real(0), reservoirs[r].y, scene);
-        Vector3 dir_view = curr_ray;
-        Spectrum f = eval(scene.materials[vertex.material_id], dir_view, dir_light, vertex, scene.texture_pool);
-        Real target_pdf = luminance(L * G * f);
+        // Vector3 dir_light = normalize(reservoirs[r].y.position - vertex.position);
+        // Real G = max(-dot(dir_light, reservoirs[r].y.normal), Real(0)) /
+        //             distance_squared(reservoirs[r].y.position, vertex.position);
+        // const Light &light = scene.lights[reservoirs[r].light_id];
+        // Spectrum L = emission(light, -dir_light, Real(0), reservoirs[r].y, scene);
+        // Vector3 dir_view = curr_ray;
+        // Spectrum f = eval(scene.materials[vertex.material_id], dir_view, dir_light, vertex, scene.texture_pool);
+        // Real target_pdf = luminance(L * G * f);
+        Real target_pdf = eval_target_pdf(scene, vertex, dir_view, reservoirs[r].y, reservoirs[r].light_id, true, x, y);
 
         //todo: normalized
         //* pˆq(r .y) · r .W · r .M
         Real w = target_pdf * reservoirs[r].W * reservoirs[r].M;
         if(debug(x, y)) {
-            std::cout << "reservior " << r << std::endl;
+            std::cout << "combine reservior " << r << std::endl;
             std::cout << "vertex " << reservoirs[r].ref_vertex.position << std::endl;
             std::cout << "sample y " << reservoirs[r].y.position << std::endl;
             std::cout << "w " << w << std::endl;
             std::cout << "ri.W " << reservoirs[r].W  << std::endl;
             std::cout << "ri.M " << reservoirs[r].M  << std::endl;
             std::cout << "target " << target_pdf  << std::endl;
-            std::cout << "G " << G  << std::endl;
-            std::cout << "f " << f  << std::endl;
-            std::cout << "L " << L  << std::endl;
             if(update_reservoir_debug(new_reservoir, reservoirs[r].light_id, reservoirs[r].y, w, next_pcg32_real<Real>(rng))) {
                 new_reservoir.ref_vertex = reservoirs[r].ref_vertex;
                 new_reservoir.prev_dir_view = reservoirs[r].prev_dir_view;
@@ -236,171 +298,30 @@ Spectrum restir_path_tracing(const Scene &scene,
             //* RIS
             //*=============
             if(!reuse) {
-                //* first pass
-                rsv = init_reservoir(); 
-                for (int r = 0; r < scene.options.ris_samples; r++) {
-                    // First, we sample a point on the light source.
-                    // We do this by first picking a light source, then pick a point on it.
-                    Vector2 light_uv{next_pcg32_real<Real>(rng), next_pcg32_real<Real>(rng)};
-                    Real light_w = next_pcg32_real<Real>(rng);
-                    Real shape_w = next_pcg32_real<Real>(rng);
-                    // if(debug(x,y)) {
-                    //     std::cout << "light uv " << light_uv << std::endl;
-                    //     std::cout << "light w " << light_w << std::endl;
-                    //     std::cout << "shape w " << shape_w << std::endl;
-                    // }
-                    light_id = sample_light(scene, light_w);
-                    const Light &light = scene.lights[light_id];
-                    point_on_light = sample_point_on_light(light, vertex.position, light_uv, shape_w, scene);
-                    // if(debug(x, y))
-                    //     std::cout << "(loop) light position" << point_on_light.position << std::endl;
-                    
-                    Real source_pdf = light_pmf(scene, light_id) *
-                        pdf_point_on_light(light, point_on_light, vertex.position, scene);
-
-                    //* target_pdf = Le * f * G
-                    //* luminance turn spectrum into real
-                    Vector3 dir_light = normalize(point_on_light.position - vertex.position);
-                    Real G = max(-dot(dir_light, point_on_light.normal), Real(0)) /
-                                distance_squared(point_on_light.position, vertex.position);
-                    Spectrum L = emission(light, -dir_light, Real(0), point_on_light, scene);
-                    Vector3 dir_view = -ray.dir;
-                    Spectrum f = eval(mat, dir_view, dir_light, vertex, scene.texture_pool);
-                    Real target_pdf = luminance(L * G * f);
-                    
-
-                    Real contri_W = 1 / source_pdf;
-                    unbiased_reuse_m = 1.0 / scene.options.ris_samples;
-
-                    Real w = target_pdf * contri_W * unbiased_reuse_m;
-                    assert(w == w);
-                    if(debug(x, y)) {
-                        std::cout << "in ris: " << r << std::endl;
-                        std::cout << "contri_w " << contri_W << " w " << w  << " target pdf " << target_pdf << std::endl;
-                    }
-
-                    // Real reservior_r = next_pcg32_real<Real>(first_bounce_rng);
-                    Real reservior_r = next_pcg32_real<Real>(rng);
-                    // if(debug(x,y))
-                    //     std::cout << "rr " << reservior_r << std::endl;
-                    update_reservoir(rsv, light_id, point_on_light, w, reservior_r);
-                }
+                regular_ris(scene, rsv, rng, vertex, -ray.dir, x, y);
+                assert(rsv.M > 0);
+                unbiased_reuse_m = 1.0 / rsv.M;
                 light_id = rsv.light_id;
                 point_on_light = rsv.y;
-                rsv.ref_vertex = vertex;
-                rsv.prev_dir_view = -ray.dir;
-                if(debug(x, y)) {
-                    std::cout << "first pass store rsv as" << std::endl;
-                    std::cout << "ref_vertex " << rsv.ref_vertex.position << std::endl;
-                    std::cout << "prev_dir_view " << rsv.prev_dir_view << std::endl;
-                    std::cout << "M " << rsv.M << std::endl;
-                }
+                // if(debug(x, y)) {
+                //     std::cout << "first pass store rsv as" << std::endl;
+                //     std::cout << "ref_vertex " << rsv.ref_vertex.position << std::endl;
+                //     std::cout << "prev_dir_view " << rsv.prev_dir_view << std::endl;
+                //     std::cout << "M " << rsv.M << std::endl;
+                // }
             } else {
                 switch(scene.options.unbiased) {
                 case static_cast<int>(Unbiased::NONE): {
-                    Reservoir current_reservoir = init_reservoir();
-                    {
-                        for (int r = 0; r < scene.options.ris_samples; r++) {
-                            // First, we sample a point on the light source.
-                            // We do this by first picking a light source, then pick a point on it.
-                            Vector2 light_uv{next_pcg32_real<Real>(rng), next_pcg32_real<Real>(rng)};
-                            Real light_w = next_pcg32_real<Real>(rng);
-                            Real shape_w = next_pcg32_real<Real>(rng);
-                            // if(debug(x,y)) {
-                            //     std::cout << "light uv " << light_uv << std::endl;
-                            //     std::cout << "light w " << light_w << std::endl;
-                            //     std::cout << "shape w " << shape_w << std::endl;
-                            // }
-                            light_id = sample_light(scene, light_w);
-                            const Light &light = scene.lights[light_id];
-                            point_on_light = sample_point_on_light(light, vertex.position, light_uv, shape_w, scene);
-                            // if(debug(x, y))
-                            //     std::cout << "(loop) light position" << point_on_light.position << std::endl;
-                            
-                            Real source_pdf = light_pmf(scene, light_id) *
-                                pdf_point_on_light(light, point_on_light, vertex.position, scene);
-
-                            //* target_pdf = Le * f * G
-                            //* luminance turn spectrum into real
-                            Vector3 dir_light = normalize(point_on_light.position - vertex.position);
-                            Real G = max(-dot(dir_light, point_on_light.normal), Real(0)) /
-                                        distance_squared(point_on_light.position, vertex.position);
-                            Spectrum L = emission(light, -dir_light, Real(0), point_on_light, scene);
-                            Vector3 dir_view = -ray.dir;
-                            Spectrum f = eval(mat, dir_view, dir_light, vertex, scene.texture_pool);
-                            Real target_pdf = luminance(L * G * f);
-                            
-
-                            Real contri_W = 1 / source_pdf;
-                            unbiased_reuse_m = 1.0 / scene.options.ris_samples;
-
-                            Real w = target_pdf * contri_W * unbiased_reuse_m;
-                            assert(w == w);
-                            if(debug(x, y)) {
-                                std::cout << "in ris: " << r << std::endl;
-                                std::cout << "contri_w " << contri_W << " w " << w  << " target pdf " << target_pdf << std::endl;
-                            }
-
-                            // Real reservior_r = next_pcg32_real<Real>(first_bounce_rng);
-                            Real reservior_r = next_pcg32_real<Real>(rng);
-                            // if(debug(x,y))
-                            //     std::cout << "rr " << reservior_r << std::endl;
-                            update_reservoir(current_reservoir, light_id, point_on_light, w, reservior_r);
-                        }
-                    }
-                    Real curr_pdf = neighbour_pdf(scene, current_reservoir, current_reservoir.y, current_reservoir.light_id, x, y) ;
-                    if (curr_pdf == 0) {
-                        current_reservoir.W = 0;
-                    } else {
-                        current_reservoir.W = 1.0 / curr_pdf * current_reservoir.w_sum;
-                        assert(current_reservoir.W == current_reservoir.W);
-                    }
-                    
+                    // Reservoir current_reservoir = init_reservoir();
+                    regular_ris(scene, rsv, rng, vertex, -ray.dir, x, y);
 
                     //* reuse with bias(Algorithm (4))
                     Reservoir new_reservoir = init_reservoir();
-                    Real new_reservoir_M = 0;
-                    reservoirs.push_back(current_reservoir);
+                    reservoirs.push_back(rsv);
                     if(debug(x, y)) {
                         std::cout << "reuse reserveroir number " << size(reservoirs) << std::endl;
                     }
-                    for(int r = 0; r < size(reservoirs); r++) {
-                        if(reservoirs[r].M == 0) continue;
-                        // pˆq(r .y) · r .W · r .M
-                        Real contri_W = reservoirs[r].W;
-     
-                        //* target_pdf = Le * f * G
-                        //* luminance turn spectrum into real
-                        Vector3 dir_light = normalize(reservoirs[r].y.position - vertex.position);
-                        Real G = max(-dot(dir_light, reservoirs[r].y.normal), Real(0)) /
-                                    distance_squared(reservoirs[r].y.position, vertex.position);
-                        Spectrum L = emission(scene.lights[reservoirs[r].light_id], -dir_light, Real(0), point_on_light, scene);
-                        Vector3 dir_view = -ray.dir;
-                        Spectrum f = eval(mat, dir_view, dir_light, vertex, scene.texture_pool);
-                        Real target_pdf = luminance(L * G * f);
-                        Ray shadow_ray{vertex.position, dir_light, 
-                                get_shadow_epsilon(scene),
-                                (1 - get_shadow_epsilon(scene)) *
-                                    distance(reservoirs[r].y.position, vertex.position)};
-
-                        if (occluded(scene, shadow_ray)) 
-                            target_pdf = 0;
-                        // Real target_pdf = neighbour_pdf(scene, current_reservoir, reservoirs[r].y, reservoirs[r].light_id, x, y);
-                        assert(reservoirs[r].M > 0);
-                        Real w = 1.0 / reservoirs[r].M * target_pdf * contri_W;
-                        // Real w = target_pdf * reservoirs[r].W * reservoirs[r].M;
-
-                        if(debug(x, y)) {
-                            std::cout << "w " << w << std::endl;
-                            std::cout << "ri.W " << reservoirs[r].W  << std::endl;
-                            std::cout << "ri.M " << reservoirs[r].M  << std::endl;
-                            std::cout << "target " << target_pdf  << std::endl;
-                            update_reservoir_debug(new_reservoir, reservoirs[r].light_id, reservoirs[r].y, w, next_pcg32_real<Real>(rng));
-                        } else {
-                            update_reservoir(new_reservoir, reservoirs[r].light_id, reservoirs[r].y, w, next_pcg32_real<Real>(rng));
-                        }
-                        new_reservoir_M += reservoirs[r].M;
-                    }
+                    Real new_reservoir_M = combine_reservoirs(scene, reservoirs, vertex, rng, -ray.dir, new_reservoir, x, y);
                     //todo: if M == 0 w_sum == 0, no selected reservoir, the y would be zero
                     //todo: just give up this DI...jump to bsdf
                     light_id = new_reservoir.light_id;
@@ -433,7 +354,7 @@ Spectrum restir_path_tracing(const Scene &scene,
                         //* luminance turn spectrum into real
                         //* pˆqi(r.y)
                         
-                        if (neighbour_pdf(scene, reservoirs[r], new_reservoir.y, new_reservoir.light_id, x, y) > 0) {
+                        if (eval_target_pdf(scene, reservoirs[r].ref_vertex, reservoirs[r].prev_dir_view, new_reservoir.y, new_reservoir.light_id, true, x, y) > 0) {
                             Z += reservoirs[r].M;
                             if(debug(x, y)) {
                                 std::cout << "r.M " << reservoirs[r].M << std::endl;
@@ -905,6 +826,9 @@ Spectrum restir_path_tracing(const Scene &scene,
                     if(rsv.M == 0) {
                         //* empty reservior
                         C1 = make_const_spectrum(0);
+                        if(debug(x, y)) {
+                            std::cout << "rsv.M is zero" << std::endl;
+                        }
                     } else {
                         // if(debug(x, y)) {
                         //     std::cout << "G " << G <<  " F " << f << " Le " << L << std::endl;
@@ -915,7 +839,9 @@ Spectrum restir_path_tracing(const Scene &scene,
                             //* if target_pdf is 0, set W to 0
                             rsv.W = 0;
                         } else {
-                            rsv.W = (1. / luminance(C1)) * rsv.w_sum;
+                            // rsv.W = (1. / luminance(C1)) * rsv.w_sum;
+                            rsv.W = unbiased_reuse_m * (1. / luminance(C1)) * rsv.w_sum;
+
 
 
                             if(debug(x, y)) {

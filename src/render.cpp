@@ -148,7 +148,6 @@ Image3 restir_path_render(const Scene &scene) {
             int y1 = min(y0 + tile_size, h);
             for (int y = y0; y < y1; y++) {
                 for (int x = x0; x < x1; x++) {
-                    Reservoir rsv = init_reservoir();
                     std::vector<Reservoir> reservoirs;
                     // reservoirs.push_back(prevImgReservoir(x, y));
 
@@ -175,9 +174,12 @@ Image3 restir_path_render(const Scene &scene) {
                     if(debug(x,y) && s) {
                         std::cout << "vector size " << size(reservoirs) << std::endl;
                     }
-                    bool reuse = !(s==0);
-                    // bool reuse = false;
-
+                    // bool reuse = !(s==0);
+                    bool reuse = false;
+                    Reservoir rsv = init_reservoir();
+                    if (reuse) {
+                        rsv = prevImgReservoir(x , y);
+                    }
                     Spectrum radiance = restir_path_tracing(scene, x, y, rngs[tile[0]][tile[1]], rsv, reuse, reservoirs);
                     // Spectrum radiance = restir_path_tracing(scene, x, y, rng, rsv, reuse, reservoirs);
                     

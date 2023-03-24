@@ -2,7 +2,8 @@
 
 <scene version="0.4.0">
 	<integrator type="path">
-		<integer name="maxDepth" value="-1"/>
+		<integer name="maxDepth" value="2"/>
+		<!-- <integer name="maxDepth" value="-1"/> -->
 	</integrator>
 
 	<sensor type="perspective">
@@ -16,7 +17,7 @@
 		<float name="fov" value="39.3077"/>
 
 		<sampler type="ldsampler">
-			<integer name="sampleCount" value="3"/>
+			<integer name="sampleCount" value="20"/>
 		</sampler>
 
 		<film type="hdrfilm">

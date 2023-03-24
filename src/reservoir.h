@@ -25,6 +25,9 @@ inline Reservoir init_reservoir() {
     r.light_id = 0;
     r.prev_dir_view = Vector3{0, 0, 0};
     r.ref_vertex = PathVertex{};
+    r.ref_vertex.position = Vector3{0, 0, 0};
+    r.ref_vertex.geometric_normal = Vector3{0, 0, 1};
+
     return r;
 }
 
@@ -46,12 +49,13 @@ inline bool update_reservoir_debug(Reservoir &rsv, int light_id, PointAndNormal 
     rsv.w_sum += w;
     rsv.M += 1;
     std::cout << "pdf_w" << pdf_w << std::endl;
-    std::cout << "w / rsv.w_sum" << w / rsv.w_sum << std::endl;
     std::cout << "rsv.w_sum" << rsv.w_sum << std::endl;
 
     if (rsv.w_sum == 0) {
         return false;
     }
+    std::cout << "w / rsv.w_sum" << w / rsv.w_sum << std::endl;
+
     if (pdf_w < (w / rsv.w_sum)) {
         std::cout << "choosen!" << pdf_w << std::endl;
         rsv.y = x;

@@ -125,21 +125,21 @@ Image3 restir_path_render(const Scene &scene) {
     int num_tiles_y = (h + tile_size - 1) / tile_size;
 
     //* want to reuse the random number seed per tile
-    // std::vector<std::vector<pcg32_state> > rngs(num_tiles_x);
-    // for (int rng_i = 0; rng_i < num_tiles_x; rng_i++) {
-    //     rngs[rng_i] = std::vector<pcg32_state>(num_tiles_y);
+    std::vector<std::vector<pcg32_state> > rngs(num_tiles_x);
+    for (int rng_i = 0; rng_i < num_tiles_x; rng_i++) {
+        rngs[rng_i] = std::vector<pcg32_state>(num_tiles_y);
 
-    //     for (int rng_j = 0; rng_j < num_tiles_y; rng_j++) {
-    //         rngs[rng_i][rng_j] = init_pcg32(rng_j * num_tiles_x + rng_i);
-    //     }
-    // }
+        for (int rng_j = 0; rng_j < num_tiles_y; rng_j++) {
+            rngs[rng_i][rng_j] = init_pcg32(rng_j * num_tiles_x + rng_i);
+        }
+    }
     int spp = scene.options.samples_per_pixel;    
     ProgressReporter reporter(spp);
     for (int s = 0; s < spp; s++) {
         //! how to wait for all the threads finish for each round...
         parallel_for([&](const Vector2i &tile) {
             // Use a different rng stream for each thread.
-            pcg32_state rng = init_pcg32(tile[1] * num_tiles_x + tile[0]);
+            //pcg32_state rng = init_pcg32(tile[1] * num_tiles_x + tile[0]);
             // pcg32_state first_rng = init_pcg32(tile[1] * num_tiles_x + tile[0]);
 
             int x0 = tile[0] * tile_size;
@@ -148,36 +148,38 @@ Image3 restir_path_render(const Scene &scene) {
             int y1 = min(y0 + tile_size, h);
             for (int y = y0; y < y1; y++) {
                 for (int x = x0; x < x1; x++) {
-
                     Reservoir rsv = init_reservoir();
                     std::vector<Reservoir> reservoirs;
+                    reservoirs.push_back(prevImgReservoir(x, y));
+
                     // std::cout << "x " << x << "y " << y << std::endl;
                     if(s > 0) {
                         for(int d = 0; d < 4; d++) {
-                            int neighbour_x = x + direction[d].x;
-                            int neighbour_y = y + direction[d].y;
+                            int neighbour_x = x + 30 * (1 -  next_pcg32_real<Real>(rngs[tile[0]][tile[1]]) * 2);
+                            int neighbour_y = y + 30 * (1 - next_pcg32_real<Real>(rngs[tile[0]][tile[1]]) * 2);
                             // if(neighbour_x < 0 || neighbour_x >= w || neighbour_y < 0 || neighbour_y >= h) {
                             //     continue;
                             // }
-                            if(neighbour_x < x0 || neighbour_x >= x1 || neighbour_y < y0 || neighbour_y >= y1) {
+                            // if(neighbour_x < x0 || neighbour_x >= x1 || neighbour_y < y0 || neighbour_y >= y1) {
+                            //     continue;
+                            // }
+                            if(neighbour_x < 0 || neighbour_x >= w || neighbour_y < 0 || neighbour_y >= h) {
                                 continue;
                             }
-                            
                             reservoirs.push_back(prevImgReservoir(neighbour_x, neighbour_y));
                             if(debug(x,y)) {
                                 std::cout << "======segment fault location log======" << std::endl;
                             }
                         }
                     }
-                    reservoirs.push_back(prevImgReservoir(x, y));
                     if(debug(x,y) && s) {
                         std::cout << "vector size " << size(reservoirs) << std::endl;
                     }
                     bool reuse = !(s==0);
                     // bool reuse = false;
 
-                    // Spectrum radiance = restir_path_tracing(scene, x, y, rngs[tile[0]][tile[1]], rsv, reuse, reservoirs);
-                    Spectrum radiance = restir_path_tracing(scene, x, y, rng, rsv, reuse, reservoirs);
+                    Spectrum radiance = restir_path_tracing(scene, x, y, rngs[tile[0]][tile[1]], rsv, reuse, reservoirs);
+                    // Spectrum radiance = restir_path_tracing(scene, x, y, rng, rsv, reuse, reservoirs);
                     
                     // std::cout << "radiance " << radiance << std::endl;
                     img(x, y) += radiance / Real(spp);

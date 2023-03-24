@@ -142,11 +142,11 @@
 		<ref name="reflectance" id="Map__54_image-image"/>
 	</bsdf>
 
-	<medium type="homogeneous" id="medium">
+	<!-- <medium type="homogeneous" id="medium">
 		<rgb name="sigmaA" value="0.5 0.5 0.5"/>
 		<rgb name="sigmaS" value="0.0 0.0 0.0"/>
 		<float name="scale" value="0.001"/>
-	</medium>
+	</medium> -->
 
 	<sensor type="perspective">
 		<float name="farClip" value="1000"/>
@@ -167,7 +167,7 @@
 
 			<rfilter type="gaussian"/>
 		</film>
-		<ref id="medium"/>
+		<!-- <ref id="medium"/> -->
 	</sensor>
 
 	

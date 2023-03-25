@@ -4,7 +4,7 @@
 	<integrator type="restir">
 		<integer name="maxDepth" value="2"/>
 		<integer name="risSamples" value="8"/>
-		<integer name="unbiased" value="0"/>
+		<integer name="unbiased" value="2"/>
 	</integrator>
 
 	<sensor type="perspective">
@@ -19,7 +19,7 @@
 
 		<sampler type="ldsampler">
 			<integer name="sampleCount" value="20"/>
-			<!-- <integer name="sampleCount" value="100"/> -->
+			<!-- <integer name="sampleCount" value="50"/> -->
 		</sampler>
 
 		<film type="hdrfilm">

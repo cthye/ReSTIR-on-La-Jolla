@@ -131,6 +131,7 @@ Real combine_reservoirs(const Scene &scene,
                         pcg32_state &rng,
                         const Vector3& dir_view,
                         Reservoir& new_reservoir,
+                        int& selected_reservoir_id,
                         int x, int y) {
     Real new_reservoir_M = 0;
     for(int r = 0; r < size(reservoirs); r++) {
@@ -138,9 +139,9 @@ Real combine_reservoirs(const Scene &scene,
         //* luminance turn spectrum into real
         //* pˆq(ri.y)
         
-        // if(reservoirs[r].M == 0) {
-        //     continue;
-        // }
+        if(reservoirs[r].W == 0) {
+            continue;
+        }
 
         Real target_pdf = eval_target_pdf(scene, vertex, dir_view, reservoirs[r].y, reservoirs[r].light_id, true, x, y);
         
@@ -160,13 +161,11 @@ Real combine_reservoirs(const Scene &scene,
             std::cout << "ri.M " << reservoirs[r].M  << std::endl;
             std::cout << "target " << target_pdf  << std::endl;
             if(update_reservoir_debug(new_reservoir, reservoirs[r].light_id, reservoirs[r].y, w, next_pcg32_real<Real>(rng))) {
-                new_reservoir.ref_vertex = reservoirs[r].ref_vertex;
-                new_reservoir.prev_dir_view = reservoirs[r].prev_dir_view;
+                selected_reservoir_id = r;
             }
         } else {
             if(update_reservoir(new_reservoir, reservoirs[r].light_id, reservoirs[r].y, w, next_pcg32_real<Real>(rng))) {
-                new_reservoir.ref_vertex = reservoirs[r].ref_vertex;
-                new_reservoir.prev_dir_view = reservoirs[r].prev_dir_view;
+                selected_reservoir_id = r;
             }
         }
 
@@ -321,21 +320,22 @@ Spectrum restir_path_tracing(const Scene &scene,
             } else {
                 switch(scene.options.unbiased) {
                 case static_cast<int>(Unbiased::NONE): {
-                    // Reservoir curr_pixel_rsv = init_reservoir();
+                    Reservoir curr_pixel_rsv = init_reservoir();
                     // // Reservoir curr_pixel_rsv = rsv;
-                    // regular_ris(scene, curr_pixel_rsv, rng, vertex, -ray.dir, x, y);
+                    regular_ris(scene, curr_pixel_rsv, rng, vertex, -ray.dir, x, y);
 
-                    // Real curr_pdf = eval_target_pdf(scene, vertex, -ray.dir, curr_pixel_rsv.y, curr_pixel_rsv.light_id, true, x, y);
-                    // if(curr_pixel_rsv.M == 0 || curr_pdf == 0) {
-                    //     curr_pixel_rsv.W = 0;
-                    // } else {
-                    //     curr_pixel_rsv.W = 1.0 / curr_pdf * curr_pixel_rsv.w_sum / curr_pixel_rsv.M;
-                    // }
-                    // reservoirs.push_back(curr_pixel_rsv);
+                    Real curr_pdf = eval_target_pdf(scene, vertex, -ray.dir, curr_pixel_rsv.y, curr_pixel_rsv.light_id, true, x, y);
+                    if(curr_pixel_rsv.M == 0 || curr_pdf == 0) {
+                        curr_pixel_rsv.W = 0;
+                    } else {
+                        curr_pixel_rsv.W = 1.0 / curr_pdf * curr_pixel_rsv.w_sum / curr_pixel_rsv.M;
+                    }
+                    reservoirs.push_back(curr_pixel_rsv);
 
                     //* reuse with bias(Algorithm (4))
                     Reservoir new_reservoir = init_reservoir();
-                    new_reservoir.M = combine_reservoirs(scene, reservoirs, vertex, rng, -ray.dir, new_reservoir, x, y);
+                    int selected_rsv = 0;
+                    new_reservoir.M = combine_reservoirs(scene, reservoirs, vertex, rng, -ray.dir, new_reservoir, selected_rsv, x, y);
                     // //todo: if M == 0 w_sum == 0, no selected reservoir, the y would be zero
                     // //todo: just give up this DI...jump to bsdf
 
@@ -370,10 +370,13 @@ Spectrum restir_path_tracing(const Scene &scene,
                     reservoirs.push_back(curr_pixel_rsv);
 
                     Reservoir new_reservoir = init_reservoir();
-                    new_reservoir.M = combine_reservoirs(scene, reservoirs, vertex, rng, -ray.dir, new_reservoir, x, y);
+                    int selected_rsv = 0;
+                    new_reservoir.M = combine_reservoirs(scene, reservoirs, vertex, rng, -ray.dir, new_reservoir, selected_rsv, x, y);
                     light_id = new_reservoir.light_id;
                     point_on_light = new_reservoir.y;
                     rsv = new_reservoir; // reuse 
+                    rsv.ref_vertex = vertex;
+                    rsv.prev_dir_view = -ray.dir;
                     
                     // light_id = rsv.light_id;
                     // point_on_light = rsv.y;
@@ -416,63 +419,78 @@ Spectrum restir_path_tracing(const Scene &scene,
                 }
                 case static_cast<int>(Unbiased::MIS): {
                     //* unbias reuse mis version (supplement Algorithm (1))
-                    
-                    Reservoir new_reservoir = init_reservoir();
-                    Real new_reservoir_M = 0;
-                    int selected_reservoir_id = 0;
-                    
-                    for(int r = 0; r < size(reservoirs); r++) {
-                        // if (reservoirs[r].W == 0) {
-                        //     //* some reservior is "empty"
-                        //     //* their W is not updated, which means its G is 0 
-                        //     if(debug(x, y)) {
-                        //         std::cout << "reserveroir " << r << "is useless" << std::endl;
-                        //     }
-                        //     continue;
-                        // }
-                        //* target_pdf = Le * f * G
-                        //* luminance turn spectrum into real
-                        //* pˆq(ri.y)
-                        Vector3 dir_light = normalize(reservoirs[r].y.position - vertex.position);
-                        Real G = max(-dot(dir_light, reservoirs[r].y.normal), Real(0)) /
-                                    distance_squared(reservoirs[r].y.position, vertex.position);
-                        const Light &light = scene.lights[reservoirs[r].light_id];
-                        Spectrum L = emission(light, -dir_light, Real(0), reservoirs[r].y, scene);
-                        Vector3 dir_view = -ray.dir;
-                        Spectrum f = eval(mat, dir_view, dir_light, vertex, scene.texture_pool);
-                        Real target_pdf = luminance(L * G * f);
+                    Reservoir curr_pixel_rsv = init_reservoir();
 
-                        // pˆq(r .y) · r .W · r .M
-                        Real w = target_pdf * reservoirs[r].W;
-                        if(debug(x, y)) {
-                            std::cout << "reservior " << r << std::endl;
-                            std::cout << "vertex " << reservoirs[r].ref_vertex.position << std::endl;
-                            std::cout << "sample y " << reservoirs[r].y.position << std::endl;
-                            std::cout << "w " << w << std::endl;
-                            std::cout << "ri.W " << reservoirs[r].W  << std::endl;
-                            std::cout << "ri.M " << reservoirs[r].M  << std::endl;
-                            std::cout << "target " << target_pdf  << std::endl;
-                            std::cout << "G " << G  << std::endl;
-                            std::cout << "f " << f  << std::endl;
-                            std::cout << "L " << L  << std::endl;
-                            if(update_reservoir_debug(new_reservoir, reservoirs[r].light_id, reservoirs[r].y, w, next_pcg32_real<Real>(rng))) {
-                                new_reservoir.ref_vertex = reservoirs[r].ref_vertex;
-                                new_reservoir.prev_dir_view = reservoirs[r].prev_dir_view;
-                                selected_reservoir_id = r;
-                            }
-                        } else {
-                            if(update_reservoir(new_reservoir, reservoirs[r].light_id, reservoirs[r].y, w, next_pcg32_real<Real>(rng))) {
-                                new_reservoir.ref_vertex = reservoirs[r].ref_vertex;
-                                new_reservoir.prev_dir_view = reservoirs[r].prev_dir_view;
-                                selected_reservoir_id = r;
-                            }
-                        }
-                        new_reservoir_M += reservoirs[r].M;
+                    regular_ris(scene, rsv, rng, vertex, -ray.dir, x, y);
+                    Real curr_pdf = eval_target_pdf(scene, vertex, -ray.dir, curr_pixel_rsv.y, curr_pixel_rsv.light_id, true, x, y);
+                    if(curr_pixel_rsv.M == 0 || curr_pdf == 0) {
+                        curr_pixel_rsv.W = 0;
+                    } else {
+                        curr_pixel_rsv.W = 1.0 / curr_pdf * curr_pixel_rsv.w_sum / curr_pixel_rsv.M;
                     }
-                    if(debug(x,y)) {
-                        std::cout << "after combined" << std::endl;
-                        std::cout << "sample y " << new_reservoir.y.position << std::endl;
-                    }
+                    reservoirs.push_back(curr_pixel_rsv);
+
+                    Reservoir new_reservoir = init_reservoir();
+                    int selected_reservoir_id = 0;
+                    new_reservoir.M = combine_reservoirs(scene, reservoirs, vertex, rng, -ray.dir, new_reservoir, selected_reservoir_id, x, y);
+                    light_id = new_reservoir.light_id;
+                    point_on_light = new_reservoir.y;
+                    rsv = new_reservoir; // reuse 
+                    rsv.ref_vertex = vertex;
+                    rsv.prev_dir_view = -ray.dir;
+                    
+                    // for(int r = 0; r < size(reservoirs); r++) {
+                    //     // if (reservoirs[r].W == 0) {
+                    //     //     //* some reservior is "empty"
+                    //     //     //* their W is not updated, which means its G is 0 
+                    //     //     if(debug(x, y)) {
+                    //     //         std::cout << "reserveroir " << r << "is useless" << std::endl;
+                    //     //     }
+                    //     //     continue;
+                    //     // }
+                    //     //* target_pdf = Le * f * G
+                    //     //* luminance turn spectrum into real
+                    //     //* pˆq(ri.y)
+                    //     Vector3 dir_light = normalize(reservoirs[r].y.position - vertex.position);
+                    //     Real G = max(-dot(dir_light, reservoirs[r].y.normal), Real(0)) /
+                    //                 distance_squared(reservoirs[r].y.position, vertex.position);
+                    //     const Light &light = scene.lights[reservoirs[r].light_id];
+                    //     Spectrum L = emission(light, -dir_light, Real(0), reservoirs[r].y, scene);
+                    //     Vector3 dir_view = -ray.dir;
+                    //     Spectrum f = eval(mat, dir_view, dir_light, vertex, scene.texture_pool);
+                    //     Real target_pdf = luminance(L * G * f);
+
+                    //     // pˆq(r .y) · r .W · r .M
+                    //     Real w = target_pdf * reservoirs[r].W;
+                    //     if(debug(x, y)) {
+                    //         std::cout << "reservior " << r << std::endl;
+                    //         std::cout << "vertex " << reservoirs[r].ref_vertex.position << std::endl;
+                    //         std::cout << "sample y " << reservoirs[r].y.position << std::endl;
+                    //         std::cout << "w " << w << std::endl;
+                    //         std::cout << "ri.W " << reservoirs[r].W  << std::endl;
+                    //         std::cout << "ri.M " << reservoirs[r].M  << std::endl;
+                    //         std::cout << "target " << target_pdf  << std::endl;
+                    //         std::cout << "G " << G  << std::endl;
+                    //         std::cout << "f " << f  << std::endl;
+                    //         std::cout << "L " << L  << std::endl;
+                    //         if(update_reservoir_debug(new_reservoir, reservoirs[r].light_id, reservoirs[r].y, w, next_pcg32_real<Real>(rng))) {
+                    //             new_reservoir.ref_vertex = reservoirs[r].ref_vertex;
+                    //             new_reservoir.prev_dir_view = reservoirs[r].prev_dir_view;
+                    //             selected_reservoir_id = r;
+                    //         }
+                    //     } else {
+                    //         if(update_reservoir(new_reservoir, reservoirs[r].light_id, reservoirs[r].y, w, next_pcg32_real<Real>(rng))) {
+                    //             new_reservoir.ref_vertex = reservoirs[r].ref_vertex;
+                    //             new_reservoir.prev_dir_view = reservoirs[r].prev_dir_view;
+                    //             selected_reservoir_id = r;
+                    //         }
+                    //     }
+                    //     new_reservoir_M += reservoirs[r].M;
+                    // }
+                    // if(debug(x,y)) {
+                    //     std::cout << "after combined" << std::endl;
+                    //     std::cout << "sample y " << new_reservoir.y.position << std::endl;
+                    // }
 
                     //* p_sum add up all the effective \hat{p}i(r.y) at neighbors
                     Real p_sum = 0;
@@ -482,63 +500,66 @@ Spectrum restir_path_tracing(const Scene &scene,
                         //* luminance turn spectrum into real
                         //* pˆqi(r.y)
                         PathVertex neighbour_vertex = reservoirs[r].ref_vertex;
+                        Vector3 neighbour_dir_view = reservoirs[r].prev_dir_view;
                         PointAndNormal light_sample = new_reservoir.y;
-                        Vector3 dir_light = normalize(light_sample.position - neighbour_vertex.position);
-                        assert(neighbour_vertex.material_id != -1);
-                        const Material &neighbour_mat = scene.materials[neighbour_vertex.material_id];
+                        int light_id = new_reservoir.light_id;
 
-                        // assert(distance_squared(light_sample.position, neighbour_vertex.position) > 0);
-                        Real dist = distance_squared(light_sample.position, neighbour_vertex.position);
-                        if (dist == 0) {
-                            continue;
-                        }
-                        Real G = max(-dot(dir_light, light_sample.normal), Real(0)) / dist;
-                        const Light &light = scene.lights[new_reservoir.light_id];
-                        Spectrum L = emission(light, -dir_light, Real(0), light_sample, scene);
-                        // Vector3 dir_view = -ray.dir;
-                        Vector3 dir_view = reservoirs[r].prev_dir_view;
-                        //? need to change dir_view?
-                        Spectrum f = eval(neighbour_mat, dir_view, dir_light, neighbour_vertex, scene.texture_pool);
-                        Real target_pdf = luminance(L * G * f);
+                        // Vector3 dir_light = normalize(light_sample.position - neighbour_vertex.position);
+                        // assert(neighbour_vertex.material_id != -1);
+                        // const Material &neighbour_mat = scene.materials[neighbour_vertex.material_id];
 
+                        // // assert(distance_squared(light_sample.position, neighbour_vertex.position) > 0);
+                        // Real dist = distance_squared(light_sample.position, neighbour_vertex.position);
+                        // assert(dist > 0);
+                        // if (dist == 0) {
+                        //     continue;
+                        // }
+                        // Real G = max(-dot(dir_light, light_sample.normal), Real(0)) / dist;
+                        // const Light &light = scene.lights[new_reservoir.light_id];
+                        // Spectrum L = emission(light, -dir_light, Real(0), light_sample, scene);
+                        // // Vector3 dir_view = -ray.dir;
+                        // Vector3 dir_view = reservoirs[r].prev_dir_view;
+                        // //? need to change dir_view?
+                        // Spectrum f = eval(neighbour_mat, dir_view, dir_light, neighbour_vertex, scene.texture_pool);
+                        // Real target_pdf = luminance(L * G * f);
+                        Real target_pdf = eval_target_pdf(scene, neighbour_vertex, neighbour_dir_view, light_sample, light_id, true, x, y);
+                        p_sum += target_pdf;
                         if(r == selected_reservoir_id) {
                             selected_pdf = target_pdf;
                         }
 
-                        if(debug(x, y)) {
-                            std::cout << "compare target pdf with 0" << std::endl;
-                            std::cout << "target_pdf " << target_pdf << std::endl;
-                            std::cout << "G " << G << std::endl;
-                            std::cout << "f " << f << std::endl;
-                            std::cout << "light pos " << light_sample.position << std::endl;
-                            std::cout << "vertex pos " << neighbour_vertex.position << std::endl;
-                            std::cout << normalize(dir_view) << std::endl;
-                            std::cout << normalize(neighbour_vertex.geometric_normal) << std::endl;
-                            std::cout << dot(neighbour_vertex.geometric_normal, dir_view) << std::endl;
-                            std::cout << dot(neighbour_vertex.geometric_normal, dir_light) << std::endl;
-                            std::cout << "L " << L << std::endl;
+                        // if(debug(x, y)) {
+                        //     std::cout << "compare target pdf with 0" << std::endl;
+                        //     std::cout << "target_pdf " << target_pdf << std::endl;
+                        //     std::cout << "G " << G << std::endl;
+                        //     std::cout << "f " << f << std::endl;
+                        //     std::cout << "light pos " << light_sample.position << std::endl;
+                        //     std::cout << "vertex pos " << neighbour_vertex.position << std::endl;
+                        //     std::cout << normalize(dir_view) << std::endl;
+                        //     std::cout << normalize(neighbour_vertex.geometric_normal) << std::endl;
+                        //     std::cout << dot(neighbour_vertex.geometric_normal, dir_view) << std::endl;
+                        //     std::cout << dot(neighbour_vertex.geometric_normal, dir_light) << std::endl;
+                        //     std::cout << "L " << L << std::endl;
 
-                        }
-                        //todo: visibility check
-                        Ray shadow_ray{neighbour_vertex.position, dir_light, 
-                               get_shadow_epsilon(scene),
-                               (1 - get_shadow_epsilon(scene)) *
-                                   distance(light_sample.position, neighbour_vertex.position)};
+                        // }
+                        // //todo: visibility check
+                        // Ray shadow_ray{neighbour_vertex.position, dir_light, 
+                        //        get_shadow_epsilon(scene),
+                        //        (1 - get_shadow_epsilon(scene)) *
+                        //            distance(light_sample.position, neighbour_vertex.position)};
 
-                        if (target_pdf > 0 && !occluded(scene, shadow_ray)) {
-                            p_sum += target_pdf;
-                            if(debug(x, y)) {
-                                std::cout << "r.M " << reservoirs[r].M << std::endl;
-                                std::cout << "add target_pdf " << target_pdf << " of the " << r << " reversor" << std::endl;
+                        // if (target_pdf > 0 && !occluded(scene, shadow_ray)) {
+                        //     p_sum += target_pdf;
+                        //     if(debug(x, y)) {
+                        //         std::cout << "r.M " << reservoirs[r].M << std::endl;
+                        //         std::cout << "add target_pdf " << target_pdf << " of the " << r << " reversor" << std::endl;
 
-                                std::cout << "p_sum " << p_sum << std::endl;
-                            }
-                        }
+                        //         std::cout << "p_sum " << p_sum << std::endl;
+                        //     }
+                        // }
                     }
 
-                    light_id = new_reservoir.light_id;
-                    point_on_light = new_reservoir.y;
-                    new_reservoir.M = new_reservoir_M;
+                  
                     // assert(p_sum > 0);
                     if(p_sum == 0) {
                         //* the p_sum is zero, 
@@ -550,7 +571,6 @@ Spectrum restir_path_tracing(const Scene &scene,
                     } else {
                         unbiased_reuse_m = selected_pdf / p_sum;
                     }
-                    rsv = new_reservoir; // reuse 
                     
                     if(debug(x, y)) {
                         std::cout << "rsv.w_sum " << rsv.w_sum << std::endl;

@@ -855,7 +855,9 @@ Spectrum restir_path_tracing(const Scene &scene,
                                 std::cout << "pass " << num_vertices - 3 << std::endl;
                                 std::cout << "w_sum " << rsv.w_sum << std::endl;
                                 std::cout << "m " << unbiased_reuse_m << std::endl;
-                                std::cout << "target pdf inverse " << 1. / luminance(C1) << std::endl;
+                                std::cout << "w_sum * m " << rsv.w_sum * unbiased_reuse_m << std::endl;
+                                std::cout << "target pdf " << luminance(C1) << std::endl;
+                                std::cout << "target pdf inverse " << (Real)1. / (Real)luminance(C1) << std::endl;
                                 std::cout << "W " << rsv.W << std::endl;
                             }
                         }

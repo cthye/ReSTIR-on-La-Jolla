@@ -168,7 +168,7 @@ Image3 restir_path_render(const Scene &scene) {
                             }
                             reservoirs.push_back(prevImgReservoir(neighbour_x, neighbour_y));
                             if(debug(x,y)) {
-                                std::cout << "======segment fault location log======" << std::endl;
+                                std::cout << "spp: " << s << " x " << neighbour_x << " y " << neighbour_y << std::endl;
                             }
                         }
                     }

@@ -30,7 +30,7 @@ inline bool debug(int x, int y) {
 
 
 
-    return x == 184 && y == 455;
+    return x == 288 && y == 334;
 
 }
 

@@ -8,6 +8,7 @@
 
 	<medium type="homogeneous" id="medium">
 		<rgb name="sigmaA" value="0.5 0.5 0.5"/>
+		<!-- <rgb name="sigmaA" value="0.0 0.0 0.0"/> -->
 		<rgb name="sigmaS" value="0.0 0.0 0.0"/>
 		<float name="scale" value="3"/>
 	</medium>

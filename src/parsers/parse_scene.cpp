@@ -583,6 +583,21 @@ RenderOptions parse_integrator(pugi::xml_node node,
         options.integrator = Integrator::RayDifferential;
     } else if (type == "mipmapLevel" || type == "mipmap_level") {
         options.integrator = Integrator::MipmapLevel;
+    } else if (type == "restir") {
+        options.integrator = Integrator::ReSTIR;
+        for (auto child : node.children()) {
+            std::string name = child.attribute("name").value();
+            if (name == "maxDepth" || name == "max_depth") {
+                options.max_depth = parse_integer(
+                    child.attribute("value").value(), default_map);
+            } else if (name == "risSamples" || name == "ris_samples") {
+                options.ris_samples = parse_integer(
+                    child.attribute("value").value(), default_map);
+            } else if (name == "unbiased") {
+                options.unbiased = parse_integer(
+                    child.attribute("value").value(), default_map);
+            }
+        }
     } else {
         Error(std::string("Unsupported integrator: ") + type);
     }

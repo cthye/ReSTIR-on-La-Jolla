@@ -15,7 +15,14 @@ else()
   add_compile_options(-Wall)
 endif()
 
+# find_package(Embree PATHS "/opt/homebrew/lib/" REQUIRED)
 find_package(Embree REQUIRED)
+
+IF(Embree_FOUND)
+  message(STATUS "find embree ${Embree_FOUND}:${EMBREE_LIBRARY}})")
+ELSE()
+  message(STATUS "not find embree")
+ENDIF()
 include_directories(${EMBREE_INCLUDE_PATH})
 link_libraries(${EMBREE_LIBRARY})
 
@@ -81,6 +88,7 @@ set(SRCS src/3rdparty/miniz.h
          src/texture.h
          src/transform.h
          src/vector.h
+         src/reservoir.h
          src/parsers/load_serialized.cpp
          src/parsers/parse_obj.cpp
          src/parsers/parse_ply.cpp

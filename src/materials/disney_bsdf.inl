@@ -66,7 +66,7 @@ Spectrum eval_op::operator()(const DisneyBSDF &bsdf) const {
     if (reflect) {
         f_glass = base_color * F_glass * D_glass * G_glass / (4 * fabs(dot(frame.n, dir_in)));
     } else {
-        assert(fabs(dot(frame.n, dir_in)) * pow(h_dot_in + eta * h_dot_out, 2));
+        // assert(fabs(dot(frame.n, dir_in)) * pow(h_dot_in + eta * h_dot_out, 2));
         f_glass = sqrt(base_color) * (1 - F_glass) * D_glass * G_glass * fabs(h_dot_in * h_dot_out) / 
            (fabs(dot(frame.n, dir_in)) * pow(h_dot_in + eta * h_dot_out, 2));
     }

@@ -90,7 +90,8 @@ Image3 path_render(const Scene &scene) {
         int y0 = tile[1] * tile_size;
         int y1 = min(y0 + tile_size, h);
         for (int y = y0; y < y1; y++) {
-            for (int x = x0; x < x1; x++) {               
+            for (int x = x0; x < x1; x++) {     
+                // if(x < 0 || x > 330 || y < 200 || y > 530) continue;           
                 Spectrum radiance = make_zero_spectrum();
                 int spp = scene.options.samples_per_pixel;
                 for (int s = 0; s < spp; s++) {
@@ -148,6 +149,7 @@ Image3 restir_path_render(const Scene &scene) {
             int y1 = min(y0 + tile_size, h);
             for (int y = y0; y < y1; y++) {
                 for (int x = x0; x < x1; x++) {
+                    // if(x < 0 || x > 330 || y < 200 || y > 530) continue; 
                     std::vector<Reservoir> reservoirs;
                     // reservoirs.push_back(prevImgReservoir(x, y));
 

@@ -2,9 +2,9 @@
 
 <scene version="0.4.0">
 	<integrator type="restir">
-		<integer name="maxDepth" value="2"/>
+		<integer name="maxDepth" value="-1"/>
 		<integer name="risSamples" value="8"/>
-		<integer name="unbiased" value="3"/>
+		<integer name="unbiased" value="0"/>
 	</integrator>
 
 	<sensor type="perspective">
@@ -18,13 +18,13 @@
 		<float name="fov" value="39.3077"/>
 
 		<sampler type="ldsampler">
-			<integer name="sampleCount" value="20"/>
-			<!-- <integer name="sampleCount" value="50"/> -->
+			<!-- <integer name="sampleCount" value="2"/> -->
+			<integer name="sampleCount" value="50"/>
 		</sampler>
 
 		<film type="hdrfilm">
-			<integer name="width" value="512"/>
-			<integer name="height" value="512"/>
+			<integer name="width" value="1024"/>
+			<integer name="height" value="1024"/>
 
 			<rfilter type="gaussian"/>
 		</film>

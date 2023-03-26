@@ -140,7 +140,13 @@ Real combine_reservoirs(const Scene &scene,
         //* luminance turn spectrum into real
         //* pˆq(ri.y)
         
-        if(reservoirs[r].W == 0) {
+        //tricky part..only filter reservoir with W=0 when NAIVE
+        //those r.W = 0 reservoir will continue add up the M and cause some uneven fireflies
+        //for other methods just add up the M
+        if(reservoirs[r].W == 0 && scene.options.unbiased == Unbiased::NAIVE) { 
+            if(debug(x, y)) {
+                std::cout << "encounter W=0 reservoir when combining" << std::endl;
+            }
             continue;
         }
 

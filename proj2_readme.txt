@@ -92,5 +92,5 @@ reference: https://cs.dartmouth.edu/wjarosz/publications/novak14residual.pdf
 - If want to have something that is biased but faster, it need a dedicated sampler as well as strong computating resources.
 
 ## Extra
-I've done the foggy scene in blender, please see the scene/monkey/hw2.xml for the scene file.
+I've done the foggy scene in blender, please see the scene/monkey/hw2.xml for the scene file and foggy_money.exr in proj2 folder.
 (tho mostly based on one from the last proj1 :)

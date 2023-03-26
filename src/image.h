@@ -1,6 +1,7 @@
 #pragma once
 
 #include "vector.h"
+#include "reservoir.h"
 
 #include <string>
 #include <cstring>
@@ -40,6 +41,7 @@ struct Image {
 
 using Image1 = Image<Real>;
 using Image3 = Image<Vector3>;
+using ImageReservoir = Image<Reservoir>;
 
 /// Read from an 1 channel image. If the image is not actually
 /// single channel, the first channel is used.

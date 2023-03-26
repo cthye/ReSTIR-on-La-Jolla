@@ -2,7 +2,7 @@
 
 <!-- Defaults, these can be set via the command line: -Darg=value -->
 
-	<default name="spp" value="4096"/>
+	<default name="spp" value="10"/>
 	<default name="resx" value="960"/>
 	<default name="resy" value="540"/>
 
